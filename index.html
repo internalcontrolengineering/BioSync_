@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioSync</title>
+<style>
+  :root {
+    --primary: #0071e3;
+    --primary-hover: #0077ed;
+    --success: #34c759;
+    --danger: #ff3b30;
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-muted: #86868b;
+    --border: #e5e5ea;
+  }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body {
+    background: linear-gradient(135deg, #f5f5f7 0%, #ebebf0 100%);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  
+  /* ===== INTRO ANIMACIÓN ===== */
+  #intro-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000; display: flex; align-items: center; justify-content: center;
+    z-index: 9999; overflow: hidden; transition: opacity 0.8s ease;
+  }
+  #intro-logo {
+    width: 200px; height: auto; object-fit: contain;
+    transform: scale(1);
+    transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease;
+  }
+  #intro-overlay.zoom-out #intro-logo {
+    transform: scale(8);
+    opacity: 0;
+  }
+  #intro-overlay.hide { opacity: 0; pointer-events: none; }
+
+  /* Navegación */
+  .tabs {
+    display: flex; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px; padding: 4px; margin-bottom: 25px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+  .tab-btn {
+    flex: 1; padding: 14px; border: none; background: transparent;
+    font-size: 15px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; border-radius: 12px; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  .tab-btn.active { background: var(--card); color: var(--text); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+  .tab-content { display: none; animation: fadeIn 0.4s ease; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Tarjetas y UI */
+  .card {
+    background: var(--card); border-radius: 24px; padding: 35px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 25px;
+    text-align: center; position: relative; border: 1px solid rgba(255,255,255,0.5);
+  }
+  h2 { margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.6px; }
+  
+  .btn-cancel-tab {
+    position: absolute; top: 24px; right: 24px; background: #f5f5f7; color: var(--danger);
+    border: 1px solid var(--border); padding: 8px 18px; border-radius: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+  }
+  .btn-cancel-tab:hover { background: #ffecec; border-color: #ffcccc; }
+
+  /* Videos */
+  .video-wrap { 
+    position: relative; display: inline-block; margin: 0 auto 20px; 
+    border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); background: #000;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  video, canvas.overlay { display: block; }
+  canvas.overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+  /* Status */
+  #status, #statusRegistro {
+    font-weight: 500; font-size: 15px; padding: 16px; border-radius: 14px;
+    background: #f2f2f7; color: var(--text); margin-bottom: 20px; transition: all 0.3s ease;
+  }
+  #status.ok, #statusRegistro.ok { background: #e8f8ed; color: #1a7f37; }
+  #status.err, #statusRegistro.err { background: #ffecec; color: #d32f2f; }
+
+  /* Botones */
+  .btn-group { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  button.action {
+    padding: 16px 32px; font-size: 16px; border: none; border-radius: 14px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  button.action:active { transform: scale(0.96); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+  button.action:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  button.entrada { background: var(--primary); color: white; }
+  button.salida { background: #f5f5f7; color: var(--danger); border: 1px solid var(--border); }
+  button.registro { background: var(--success); color: white; }
+  button.secondary { background: #f5f5f7; color: var(--text); border: 1px solid var(--border); }
+  button.exportar { background: #f5f5f7; color: var(--text); border: 1px solid var(--border); margin-bottom: 15px; }
+  button.btn-vaciar { background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; margin-bottom: 15px; }
+  
+  /* Aviso Rostro */
+  #aviso-rostro {
+    display: none; margin-top: 20px; padding: 24px; background: #f5f5f7;
+    border-radius: 16px; border: 1px solid var(--border); animation: fadeIn 0.5s ease;
+  }
+  #aviso-rostro p { margin: 0 0 15px 0; font-size: 16px; font-weight: 500; }
+
+  /* Inputs */
+  input[type="text"], input[type="password"] {
+    padding: 14px 18px; width: 100%; max-width: 320px; border: 1px solid var(--border);
+    border-radius: 12px; font-size: 15px; margin-bottom: 12px; outline: none; transition: all 0.2s;
+    background: #fbfbfb;
+  }
+  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
+
+  /* Tablas */
+  table { width: 100%; border-collapse: collapse; font-size: 15px; text-align: left; }
+  th, td { padding: 18px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { font-weight: 600; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; }
+  tr:last-child td { border-bottom: none; }
+  
+  /* Agrupación por Fecha */
+  .grupo-fecha {
+    background: var(--card); border-radius: 18px; margin-bottom: 20px; overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+  .grupo-titulo {
+    background: #fbfbfd; padding: 16px 22px; font-weight: 600; font-size: 15px;
+    color: var(--text); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);
+  }
+
+  /* Captura de fotos */
+  .capture-sequence { display: flex; gap: 15px; justify-content: center; margin: 25px 0; }
+  .capture-step {
+    width: 100px; height: 100px; border-radius: 16px; background: #f5f5f7;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden; font-weight: 600; color: var(--text-muted); border: 2px dashed #d2d2d7;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative;
+  }
+  .capture-step img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+  .capture-step.done { border-color: var(--success); border-style: solid; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2); }
+  .capture-step.selected { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.2); }
+  
+  .btn-delete-photo {
+    position: absolute; top: 6px; right: 6px; background: rgba(255,59,48,0.9);
+    color: white; border: none; border-radius: 50%; width: 24px; height: 24px;
+    font-size: 12px; cursor: pointer; display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); transition: transform 0.2s;
+  }
+  .btn-delete-photo:hover { transform: scale(1.1); }
+  .capture-step.done .btn-delete-photo { display: flex; }
+
+  /* Badges */
+  .badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+  .badge.in { background: #e8f8ed; color: #1a7f37; }
+  .badge.out { background: #ffecec; color: #d32f2f; }
+  .foto-tabla { height: 48px; width: 48px; object-fit: cover; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+  #panel-seleccion {
+    display: none; margin-top: 20px; padding: 24px; background: #f0f7ff;
+    border-radius: 16px; border: 1px solid #d0e3ff;
+  }
+
+  /* Botón flotante Admin */
+  #btn-admin {
+    position: fixed; bottom: 30px; left: 30px; width: 60px; height: 60px;
+    border-radius: 50%; background: var(--card); color: var(--text-muted);
+    border: 1px solid var(--border); font-size: 26px; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 1000;
+  }
+  #btn-admin:hover { transform: rotate(15deg) scale(1.08); color: var(--primary); box-shadow: 0 12px 32px rgba(0,0,0,0.18); }
+
+  /* Menú flotante de Admin */
+  #admin-menu {
+    position: fixed; bottom: 105px; left: 30px;
+    background: var(--card); border-radius: 18px; padding: 8px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.15); border: 1px solid var(--border);
+    display: none; flex-direction: column; gap: 4px; z-index: 999;
+    transform-origin: bottom left; animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  #admin-menu.show { display: flex; }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+  
+  .admin-menu-item {
+    padding: 14px 22px; border-radius: 12px; cursor: pointer; font-size: 15px;
+    font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 12px;
+    transition: background 0.2s;
+  }
+  .admin-menu-item:hover { background: #f5f5f7; }
+  .admin-menu-item span.icon { font-size: 20px; }
+
+  /* Configuración Switch */
+  .config-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px; background: #f5f5f7; border-radius: 14px; margin-top: 15px;
+  }
+  .config-row span { font-weight: 500; font-size: 16px; }
+  .switch {
+    position: relative; display: inline-block; width: 54px; height: 32px;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #e5e5ea; transition: .4s; border-radius: 34px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 28px; width: 28px; left: 2px; bottom: 2px;
+    background-color: white; transition: .4s; border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  input:checked + .slider { background-color: var(--success); }
+  input:checked + .slider:before { transform: translateX(22px); }
+
+  /* Modales */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: none; align-items: center; justify-content: center; z-index: 2000;
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .modal-overlay.show { display: flex; opacity: 1; }
+  .modal-box {
+    background: var(--card); width: 90%; max-width: 360px;
+    border-radius: 28px; padding: 28px; text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    transform: scale(0.95) translateY(10px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .modal-overlay.show .modal-box { transform: scale(1) translateY(0); }
+  .modal-icon {
+    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center; font-size: 32px;
+  }
+  .modal-icon.danger { background: #ffecec; color: var(--danger); }
+  .modal-icon.primary { background: #e8f0fe; color: var(--primary); }
+  .modal-box h3 { margin: 0 0 10px 0; font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
+  .modal-box p { margin: 0 0 24px 0; font-size: 15px; color: var(--text-muted); line-height: 1.4; }
+  .modal-box input {
+    width: 100%; padding: 16px; border: 1px solid var(--border); border-radius: 14px;
+    font-size: 16px; margin-bottom: 24px; text-align: center; outline: none; background: #f5f5f7;
+  }
+  .modal-box input:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
+  
+  .modal-btn-group { display: flex; gap: 12px; }
+  .modal-btn-group button {
+    flex: 1; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.2s ease;
+  }
+  .modal-btn-group button:active { transform: scale(0.96); }
+  .modal-btn-group button.cancel { background: #f5f5f7; color: var(--text); }
+  .modal-btn-group button.confirm-primary { background: var(--primary); color: white; }
+  .modal-btn-group button.confirm-danger { background: var(--danger); color: white; }
+</style>
+</head>
+<body>
+
+<!-- INTRO ANIMACIÓN HBO MAX STYLE -->
+<div id="intro-overlay">
+  <img id="intro-logo" src="https://raw.githubusercontent.com/internalcontrolengineering/Desarrollos/main/LogoCI-G.png" alt="CI Logo">
+</div>
+
+<div class="container">
+  <h1 style="text-align: center; font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 35px; color: #1d1d1f;">BioSync</h1>
+  
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="escaner">Biométrico de Asistencia</button>
+    <button class="tab-btn" data-tab="empleados" id="tab-btn-empleados" style="display: none;">Registro de Colaborador</button>
+    <button class="tab-btn" data-tab="registros">Registro de Asistencias</button>
+  </div>
+
+  <!-- BIOMÉTRICO -->
+  <div id="tab-escaner" class="tab-content active">
+    <div class="card">
+      <div class="video-wrap" id="video-wrap-scanner">
+        <video id="videoScanner" width="400" height="300" autoplay muted playsinline></video>
+        <canvas id="overlayScanner" class="overlay" width="400" height="300"></canvas>
+      </div>
+      <div id="status">Iniciando...</div>
+      
+      <div id="user-info" style="font-size: 20px; margin-bottom: 15px; font-weight: 700; display: none; color: var(--success);"></div>
+      
+      <div class="btn-group" id="acciones-asistencia" style="display: none;">
+        <button id="btnEntrada" class="action entrada" disabled>Registrar Entrada</button>
+        <button id="btnSalida" class="action salida" disabled>Registrar Salida</button>
+      </div>
+
+      <div id="aviso-rostro">
+        <p>¿Deseas agregar al colaborador?</p>
+        <button class="action registro" onclick="abrirMenuAdmin()">Ir a Registro de Colaborador</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTRO DE COLABORADOR -->
+  <div id="tab-empleados" class="tab-content">
+    <div class="card">
+      <button class="btn-cancel-tab" onclick="bloquearModulo()">Bloquear y Salir</button>
+      <h2>Registrar Nuevo Colaborador</h2>
+      <div style="margin-bottom: 25px;">
+        <input type="text" id="inputNombre" placeholder="Nombre completo">
+        <input type="text" id="inputId" placeholder="Número de colaborador">
+      </div>
+      
+      <div class="video-wrap">
+        <video id="videoRegistro" width="400" height="300" autoplay muted playsinline></video>
+      </div>
+      
+      <div id="statusRegistro">Iniciando cámara...</div>
+
+      <div class="capture-sequence">
+        <div class="capture-step" id="step1">1</div>
+        <div class="capture-step" id="step2">2</div>
+        <div class="capture-step" id="step3">3</div>
+      </div>
+
+      <div class="btn-group" style="margin-bottom: 15px;">
+        <button id="btnTomarFoto" class="action registro" disabled>📸 Tomar Foto 1</button>
+        <button id="btnReiniciar" class="action secondary" style="display: none;">Cancelar Captura</button>
+      </div>
+
+      <div id="panel-seleccion">
+        <h3>✅ ¡3 fotos capturadas!</h3>
+        <p style="color: var(--text-muted); font-size: 15px;">Selecciona la mejor foto para el registro oficial.</p>
+        <button id="btnConfirmarFoto" class="action registro" style="margin-top: 10px;">Confirmar y Guardar</button>
+      </div>
+    </div>
+
+    <div class="card" style="text-align: left; padding: 25px;">
+      <h2 style="margin-bottom: 20px;">Base de Datos de Colaboradores</h2>
+      <div style="overflow-x: auto;">
+        <table id="tablaEmpleados">
+          <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTRO DE ASISTENCIAS -->
+  <div id="tab-registros" class="tab-content">
+    <div class="card" style="text-align: left; padding: 25px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">Registro de Asistencias</h2>
+        <div style="display: flex; gap: 10px;">
+          <button id="btnExportarCSV" class="action exportar" style="padding: 12px 20px; font-size: 14px;">Exportar a Excel</button>
+          <button id="btnVaciarHistorial" class="action btn-vaciar" style="padding: 12px 20px; font-size: 14px;">Borrar Todo</button>
+        </div>
+      </div>
+      
+      <div id="contenedor-registros">
+        <p style="text-align: center; color: var(--text-muted);">Cargando registros...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Menú Flotante Admin -->
+<div id="admin-menu">
+  <div class="admin-menu-item" onclick="pedirPass('registro')">
+    <span class="icon">👤</span> Registro de Colaborador
+  </div>
+  <div class="admin-menu-item" onclick="pedirPass('config')">
+    <span class="icon">⚙️</span> Configuraciones
+  </div>
+</div>
+
+<!-- Botón flotante Admin -->
+<button id="btn-admin" title="Administración" onclick="toggleMenuAdmin()">🛡️</button>
+
+<!-- MODALES -->
+<div id="modal-password" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon primary">🔒</div>
+    <h3 id="titulo-modal-pass">Acceso Restringido</h3>
+    <p id="desc-modal-pass">Ingresa la contraseña de administrador para continuar.</p>
+    <input type="password" id="input-password" placeholder="Contraseña">
+    <div class="modal-btn-group">
+      <button class="cancel" onclick="cerrarModal('modal-password')">Cancelar</button>
+      <button class="confirm-primary" onclick="validarPasswordAdmin()">Ingresar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Configuraciones -->
+<div id="modal-configuraciones" class="modal-overlay">
+  <div class="modal-box" style="text-align: left;">
+    <div class="modal-icon primary" style="margin: 0 auto 20px;">⚙️</div>
+    <h3 style="text-align: center; margin-bottom: 24px;">Configuraciones</h3>
+    
+    <div class="config-row">
+      <span>Encender cámara al abrir</span>
+      <label class="switch">
+        <input type="checkbox" id="check-camara-auto">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <p style="font-size: 13px; color: var(--text-muted); margin-top: 20px; text-align: center;">
+      Si se desactiva, la cámara no se encenderá hasta que tomes una acción manual.
+    </p>
+    
+    <div class="modal-btn-group" style="margin-top: 24px;">
+      <button class="cancel" onclick="cerrarModal('modal-configuraciones')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-confirmar-eliminar" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon danger">⚠️</div>
+    <h3>Eliminar Colaborador</h3>
+    <p>¿Estás seguro de que deseas eliminar a este colaborador? Esta acción no se puede deshacer.</p>
+    <div class="modal-btn-group">
+      <button class="cancel" onclick="cerrarModal('modal-confirmar-eliminar')">Cancelar</button>
+      <button class="confirm-danger" id="btn-modal-eliminar">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-password-accion" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon primary">🔒</div>
+    <h3>Confirmar Contraseña</h3>
+    <p>Ingresa la contraseña para autorizar esta acción.</p>
+    <input type="password" id="input-password-accion" placeholder="Contraseña">
+    <div class="modal-btn-group">
+      <button class="cancel" onclick="cerrarModal('modal-password-accion')">Cancelar</button>
+      <button class="confirm-primary" id="btn-modal-password-accion">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-confirmar-guardar" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon primary">❓</div>
+    <h3 id="modal-guardar-titulo">Confirmar Acción</h3>
+    <p id="modal-guardar-mensaje">¿Deseas guardar los cambios?</p>
+    <div class="modal-btn-group">
+      <button class="cancel" onclick="cerrarModal('modal-confirmar-guardar')">Cancelar</button>
+      <button class="confirm-primary" id="btn-modal-guardar">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
+  const THRESHOLD = 0.55; 
+  const HORAS_REQUERIDAS = 5;
+  const OFICINA_LAT = 20.9674; 
+  const OFICINA_LON = -89.6237;
+  const RADIO_METROS = 100; 
+  const VALIDAR_UBICACION = true; 
+  const PASSWORD_ADMIN = "ControlInterno2026";
+
+  let labeledDescriptors = []; 
+  let listo = false;
+  let rostroActual = null; 
+  let guardando = false;
+  let adminAutorizado = false;
+  let accionPendienteAdmin = null; 
+  
+  let fotos = [null, null, null]; 
+  let descriptores = [null, null, null];
+  let fotoSeleccionada = -1; 
+  let idEmpleadoEditando = null; 
+
+  let tiempoSinReconocer = 0; 
+  let ultimoFrameTime = Date.now();
+  let botonMostrado = false;
+  
+  let streamGlobal = null;
+  let db;
+
+  const videoScanner = document.getElementById("videoScanner");
+  const overlayScanner = document.getElementById("overlayScanner");
+  const statusEl = document.getElementById("status");
+  const userInfo = document.getElementById("user-info");
+  const btnEntrada = document.getElementById("btnEntrada");
+  const btnSalida = document.getElementById("btnSalida");
+  const accionesAsistencia = document.getElementById("acciones-asistencia");
+  const avisoRostro = document.getElementById("aviso-rostro");
+  
+  const videoRegistro = document.getElementById("videoRegistro");
+  const statusRegistro = document.getElementById("statusRegistro");
+  const btnTomarFoto = document.getElementById("btnTomarFoto");
+  const btnReiniciar = document.getElementById("btnReiniciar");
+  const panelSeleccion = document.getElementById("panel-seleccion");
+  const btnConfirmarFoto = document.getElementById("btnConfirmarFoto");
+  const inputNombre = document.getElementById("inputNombre");
+  const inputId = document.getElementById("inputId");
+  
+  const adminMenu = document.getElementById("admin-menu");
+  const checkCamaraAuto = document.getElementById("check-camara-auto");
+
+  window.addEventListener("load", () => {
+    const intro = document.getElementById("intro-overlay");
+    setTimeout(() => {
+      intro.classList.add("zoom-out");
+      setTimeout(() => {
+        intro.classList.add("hide");
+        setTimeout(() => intro.remove(), 800);
+      }, 1000);
+    }, 1500);
+  });
+
+  window.toggleMenuAdmin = function() {
+    adminMenu.classList.toggle("show");
+  }
+
+  window.abrirMenuAdmin = function() {
+    adminMenu.classList.add("show");
+  }
+
+  window.pedirPass = function(accion) {
+    adminMenu.classList.remove("show");
+    accionPendienteAdmin = accion;
+    
+    if (accion === "registro") {
+      document.getElementById("titulo-modal-pass").textContent = "Registro de Colaborador";
+      document.getElementById("desc-modal-pass").textContent = "Ingresa la contraseña para acceder al registro.";
+    } else {
+      document.getElementById("titulo-modal-pass").textContent = "Configuraciones";
+      document.getElementById("desc-modal-pass").textContent = "Ingresa la contraseña para acceder a configuraciones.";
+    }
+    
+    abrirModal('modal-password');
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById("btn-admin").contains(e.target) && !adminMenu.contains(e.target)) {
+      adminMenu.classList.remove("show");
+    }
+  });
+
+  function abrirModal(id) {
+    document.getElementById(id).classList.add('show');
+    const input = document.getElementById(id).querySelector('input');
+    if (input) { input.value = ""; setTimeout(() => input.focus(), 100); }
+  }
+  window.cerrarModal = function(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (document.getElementById('modal-password').classList.contains('show')) {
+        e.preventDefault(); validarPasswordAdmin();
+      } else if (document.getElementById('modal-password-accion').classList.contains('show')) {
+        e.preventDefault(); document.getElementById('btn-modal-password-accion').click();
+      } else if (document.getElementById('modal-confirmar-guardar').classList.contains('show')) {
+        e.preventDefault(); document.getElementById('btn-modal-guardar').click();
+      } else if (document.getElementById('modal-confirmar-eliminar').classList.contains('show')) {
+        e.preventDefault(); document.getElementById('btn-modal-eliminar').click();
+      }
+    }
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (document.getElementById('tab-empleados').classList.contains('active') && btn.dataset.tab !== 'empleados') {
+        bloquearModulo();
+      }
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      
+      if (btn.dataset.tab === 'empleados') renderTablaEmpleados();
+      if (btn.dataset.tab === 'registros') renderTablaRegistros();
+    });
+  });
+
+  window.bloquearModulo = function() {
+    document.getElementById("tab-btn-empleados").style.display = "none";
+    reiniciarFormulario();
+    document.querySelector('[data-tab="escaner"]').click();
+    statusEl.textContent = "Módulo bloqueado.";
+    if(videoRegistro.srcObject) {
+       videoRegistro.srcObject = null;
+       if(streamGlobal) videoScanner.srcObject = streamGlobal;
+    }
+  }
+
+  window.validarPasswordAdmin = function() {
+    const val = document.getElementById("input-password").value;
+    if (val === PASSWORD_ADMIN) {
+      cerrarModal('modal-password');
+      
+      if (accionPendienteAdmin === "registro") {
+        document.getElementById("tab-btn-empleados").style.display = "block";
+        document.getElementById("tab-btn-empleados").click();
+        if (streamGlobal) {
+          videoRegistro.srcObject = streamGlobal;
+          videoScanner.srcObject = null;
+        }
+      } else if (accionPendienteAdmin === "config") {
+        const autoCam = localStorage.getItem("autoCamara") !== "false";
+        checkCamaraAuto.checked = autoCam;
+        abrirModal('modal-configuraciones');
+      }
+      accionPendienteAdmin = null;
+    } else {
+      alert("❌ Contraseña incorrecta.");
+    }
+  };
+
+  checkCamaraAuto.addEventListener('change', (e) => {
+    localStorage.setItem("autoCamara", e.target.checked);
+    if (e.target.checked) {
+      encenderCamara();
+    }
+  });
+
+  function hoyISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function calcularDistancia(lat1, lon1, lat2, lon2) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad;
+    const dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function initDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("GuardiasDB", 1);
+      request.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("empleados")) db.createObjectStore("empleados", { keyPath: "employeeId" });
+        if (!db.objectStoreNames.contains("registros")) db.createObjectStore("registros", { keyPath: "id", autoIncrement: true });
+      };
+      request.onsuccess = e => { db = e.target.result; resolve(); };
+      request.onerror = e => reject("Error abriendo DB");
+    });
+  }
+
+  function guardarEmpleadoDB(emp) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("empleados", "readwrite");
+      const req = tx.objectStore("empleados").put({ name: emp.name, employeeId: emp.employeeId, descriptor: Array.from(emp.descriptor), foto: emp.foto });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject("Error al guardar");
+    });
+  }
+
+  function eliminarEmpleadoDB(id) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("empleados", "readwrite");
+      const req = tx.objectStore("empleados").delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject("Error al eliminar");
+    });
+  }
+
+  function guardarRegistroDB(reg) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("registros", "readwrite");
+      const req = tx.objectStore("registros").add(reg);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject("Error al guardar registro");
+    });
+  }
+
+  async function cargarTodoDB() {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["empleados", "registros"], "readonly");
+      const empStore = tx.objectStore("empleados");
+      const regStore = tx.objectStore("registros");
+      let empleados = [], registros = [];
+      empStore.getAll().onsuccess = e => { empleados = e.target.result; };
+      regStore.getAll().onsuccess = e => { registros = e.target.result; };
+      tx.oncomplete = () => {
+        labeledDescriptors = empleados.map(e => ({
+          name: e.name, employeeId: e.employeeId, descriptor: new Float32Array(e.descriptor), foto: e.foto
+        }));
+        renderTablaEmpleados();
+        renderRegistrosDesdeArray(registros);
+        resolve();
+      };
+      tx.onerror = () => reject("Error al cargar base de datos");
+    });
+  }
+
+  function renderTablaEmpleados() {
+    const tbody = document.querySelector("#tablaEmpleados tbody");
+    tbody.innerHTML = "";
+    if (labeledDescriptors.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No hay colaboradores registrados</td></tr>';
+      return;
+    }
+    labeledDescriptors.forEach(emp => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${emp.foto ? `<img src="${emp.foto}" class="foto-tabla">` : 'N/A'}</td>
+        <td>${emp.employeeId}</td>
+        <td>${emp.name}</td>
+        <td>
+          <button class="action secondary" style="padding: 8px 14px; font-size: 13px; margin-right: 5px;" onclick="editarEmpleado('${emp.employeeId}')">Editar</button>
+          <button class="action btn-vaciar" style="padding: 8px 14px; font-size: 13px;" onclick="solicitarEliminarEmpleado('${emp.employeeId}')">Eliminar</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function renderTablaRegistros() {
+    if(!db) return;
+    const tx = db.transaction("registros", "readonly");
+    const req = tx.objectStore("registros").getAll();
+    req.onsuccess = () => { renderRegistrosDesdeArray(req.result.reverse()); };
+  }
+
+  function renderRegistrosDesdeArray(registros) {
+    const contenedor = document.getElementById("contenedor-registros");
+    contenedor.innerHTML = "";
+    if (registros.length === 0) {
+      contenedor.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay asistencias registradas aún.</p>';
+      return;
+    }
+    const grupos = {};
+    registros.forEach(r => {
+      const fecha = new Date(r.hora);
+      const dia = fecha.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+      if (!grupos[dia]) grupos[dia] = [];
+      grupos[dia].push(r);
+    });
+
+    for (const [dia, regs] of Object.entries(grupos)) {
+      const divGrupo = document.createElement("div");
+      divGrupo.className = "grupo-fecha";
+      const titulo = document.createElement("div");
+      titulo.className = "grupo-titulo";
+      titulo.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
+      divGrupo.appendChild(titulo);
+
+      const table = document.createElement("table");
+      table.innerHTML = `<thead><tr><th>Colaborador</th><th>Tipo</th><th>Hora</th><th>Ubicación</th><th>Foto</th></tr></thead>`;
+      const tbody = document.createElement("tbody");
+      regs.forEach(r => {
+        const tr = document.createElement("tr");
+        const hora = new Date(r.hora).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        const coords = r.ubicacion ? `${r.ubicacion.lat.toFixed(4)}, ${r.ubicacion.lng.toFixed(4)}` : "N/A";
+        const badge = r.tipo === "ENTRADA" ? '<span class="badge in">ENTRADA</span>' : '<span class="badge out">SALIDA</span>';
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${r.name} <span style="color:var(--text-muted); font-weight:400; font-size:13px;">(#${r.id})</span></td>
+          <td>${badge}</td>
+          <td>${hora}</td>
+          <td style="font-size: 13px; color: var(--text-muted);">${coords}</td>
+          <td>${r.foto ? `<img src="${r.foto}" class="foto-tabla">` : 'Sin foto'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      divGrupo.appendChild(table);
+      contenedor.appendChild(divGrupo);
+    }
+  }
+
+  window.editarEmpleado = function(id) {
+    abrirModal('modal-password-accion');
+    document.getElementById('btn-modal-password-accion').onclick = () => {
+      const pass = document.getElementById("input-password-accion").value;
+      if (pass !== PASSWORD_ADMIN) return alert("❌ Contraseña incorrecta.");
+      cerrarModal('modal-password-accion');
+      const emp = labeledDescriptors.find(e => e.employeeId === id);
+      if (!emp) return;
+
+      idEmpleadoEditando = id;
+      inputNombre.value = emp.name;
+      inputId.value = emp.employeeId;
+      inputId.disabled = true; 
+      btnTomarFoto.disabled = true; 
+      statusRegistro.className = "";
+      statusRegistro.textContent = "Editando colaborador. Toma 3 fotos nuevas.";
+      
+      fotos = [null, null, null];
+      descriptores = [null, null, null];
+      fotoSeleccionada = -1;
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('step' + i);
+        el.className = 'capture-step';
+        el.innerHTML = `${i}`;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  };
+
+  window.solicitarEliminarEmpleado = function(id) {
+    abrirModal('modal-confirmar-eliminar');
+    document.getElementById('btn-modal-eliminar').onclick = () => {
+      cerrarModal('modal-confirmar-eliminar');
+      abrirModal('modal-password-accion');
+      document.getElementById('btn-modal-password-accion').onclick = async () => {
+        const pass = document.getElementById("input-password-accion").value;
+        if (pass !== PASSWORD_ADMIN) return alert("❌ Contraseña incorrecta.");
+        cerrarModal('modal-password-accion');
+        try {
+          await eliminarEmpleadoDB(id);
+          await cargarTodoDB();
+        } catch(e) { alert(e); }
+      };
+    };
+  };
+
+  async function encenderCamara() {
+    try {
+      statusEl.textContent = "Encendiendo cámara...";
+      statusRegistro.textContent = "Encendiendo cámara...";
+      
+      streamGlobal = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 300 } });
+      
+      const tabActiva = document.querySelector('.tab-btn.active').dataset.tab;
+      if (tabActiva === 'empleados') {
+        videoRegistro.srcObject = streamGlobal;
+      } else {
+        videoScanner.srcObject = streamGlobal;
+      }
+
+      await Promise.all([
+        new Promise(res => { if (videoScanner.readyState >= 2) res(); else videoScanner.onloadedmetadata = () => res(); }),
+        new Promise(res => { if (videoRegistro.readyState >= 2) res(); else videoRegistro.onloadedmetadata = () => res(); })
+      ]);
+
+      listo = true;
+      btnTomarFoto.disabled = false;
+      statusRegistro.className = "ok";
+      statusRegistro.textContent = "Cámara lista. Toma la primera foto.";
+      
+      statusEl.className = "ok";
+      statusEl.textContent = "Acérquese a la cámara para registrar su asistencia.";
+      
+      loopDeteccion();
+
+    } catch (e) {
+      console.error(e);
+      statusEl.className = "err";
+      statusEl.textContent = "Error de cámara: " + e;
+      statusRegistro.className = "err";
+      statusRegistro.textContent = "Error de cámara: " + e;
+    }
+  }
+
+  async function init() {
+    try {
+      statusEl.textContent = "Cargando modelos de IA...";
+      await initDB();
+      await cargarTodoDB();
+
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+      const autoCam = localStorage.getItem("autoCamara") !== "false";
+      if (autoCam) {
+        await encenderCamara();
+      } else {
+        statusEl.className = "";
+        statusEl.textContent = "Cámara apagada por configuración. Presiona el escudo para encenderla.";
+      }
+      
+    } catch (e) {
+      console.error(e);
+      statusEl.className = "err";
+      statusEl.textContent = "Error: " + e;
+    }
+  }
+
+  async function loopDeteccion() {
+    if (videoScanner.readyState === 4 && !guardando && videoScanner.srcObject) {
+      const ahora = Date.now();
+      const deltaTime = ahora - ultimoFrameTime;
+      ultimoFrameTime = ahora;
+
+      try {
+        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 });
+        const detections = await faceapi.detectAllFaces(videoScanner, options).withFaceLandmarks();
+
+        const ctx = overlayScanner.getContext("2d");
+        ctx.clearRect(0, 0, overlayScanner.width, overlayScanner.height);
+        faceapi.draw.drawDetections(overlayScanner, detections);
+
+        let rostroReconocido = false;
+
+        if (detections.length > 0 && labeledDescriptors.length > 0) {
+          const det = await faceapi.detectSingleFace(videoScanner, options).withFaceLandmarks().withFaceDescriptor();
+          if (det) {
+            const labeled = labeledDescriptors.map(e => new faceapi.LabeledFaceDescriptors(e.name, [e.descriptor]));
+            const matcher = new faceapi.FaceMatcher(labeled, THRESHOLD);
+            const match = matcher.findBestMatch(det.descriptor);
+
+            if (match.label !== "unknown") {
+              rostroReconocido = true;
+              tiempoSinReconocer = 0;
+              
+              const emp = labeledDescriptors.find(e => e.name === match.label);
+              if (!rostroActual || rostroActual.employeeId !== emp.employeeId) {
+                rostroActual = emp;
+                videoScanner.style.borderColor = "var(--success)";
+                userInfo.style.display = "block";
+                userInfo.textContent = `✅ ${emp.name} (#${emp.employeeId})`;
+                statusEl.className = "ok";
+                statusEl.textContent = "Colaborador reconocido. Selecciona una acción.";
+                accionesAsistencia.style.display = "flex";
+              }
+              btnEntrada.disabled = false;
+              btnSalida.disabled = false;
+            }
+          }
+        }
+
+        if (!rostroReconocido && detections.length > 0) {
+          tiempoSinReconocer += deltaTime;
+          
+          if (tiempoSinReconocer > 5000 && !botonMostrado) {
+            botonMostrado = true;
+            avisoRostro.style.display = "block";
+            statusEl.textContent = "No se reconoce el rostro.";
+            statusEl.className = "err";
+          }
+        } else if (detections.length === 0) {
+          limpiarRostroScanner();
+        } else if (rostroReconocido) {
+          botonMostrado = false;
+          avisoRostro.style.display = "none";
+        }
+
+      } catch (_) {}
+    }
+    requestAnimationFrame(loopDeteccion);
+  }
+
+  function limpiarRostroScanner() {
+    if (rostroActual) {
+      rostroActual = null;
+      videoScanner.style.borderColor = "transparent";
+      userInfo.style.display = "none";
+      accionesAsistencia.style.display = "none";
+      btnEntrada.disabled = true;
+      btnSalida.disabled = true;
+      statusEl.className = "";
+      statusEl.textContent = "Acérquese a la cámara para registrar su asistencia.";
+    }
+  }
+
+  btnTomarFoto.addEventListener("click", async () => {
+    if (!listo) return;
+    const nombre = inputNombre.value.trim();
+    const id = inputId.value.trim();
+    
+    if (!nombre || !id) return alert("Llena el nombre y número de empleado.");
+    if (!idEmpleadoEditando && labeledDescriptors.some(e => e.employeeId === id)) return alert("Ese ID ya existe.");
+
+    btnTomarFoto.disabled = true;
+    statusRegistro.className = "";
+    statusRegistro.textContent = "Analizando rostro...";
+
+    try {
+      if (!faceapi.nets.faceRecognitionNet.isLoaded) throw new Error("La IA se está cargando.");
+      const det = await faceapi.detectSingleFace(videoRegistro, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+      if (!det) throw new Error("No se detectó rostro. Acércate.");
+
+      const fotoBase64 = capturarFoto(videoRegistro);
+      let index = fotos.indexOf(null);
+      if (index === -1) return;
+
+      fotos[index] = fotoBase64;
+      descriptores[index] = det.descriptor;
+
+      const stepEl = document.getElementById('step' + (index + 1));
+      stepEl.classList.add('done');
+      stepEl.innerHTML = `
+        <img src="${fotoBase64}" onclick="seleccionarFotoTemporal(${index})">
+        <button class="btn-delete-photo" onclick="event.stopPropagation(); borrarFoto(${index})">✖</button>
+      `;
+
+      const fotosTomadas = fotos.filter(f => f !== null).length;
+
+      if (fotosTomadas < 3) {
+        statusRegistro.className = "ok";
+        statusRegistro.textContent = `✅ Foto ${fotosTomadas} capturada.`;
+        btnTomarFoto.textContent = `📸 Tomar Foto ${fotosTomadas + 1}`;
+        btnTomarFoto.disabled = false;
+      } else {
+        statusRegistro.className = "ok";
+        statusRegistro.textContent = "✅ Fotos listas. Selecciona la mejor.";
+        btnTomarFoto.style.display = "none";
+        btnReiniciar.style.display = "inline-block";
+        panelSeleccion.style.display = "block";
+        seleccionarFotoTemporal(0);
+      }
+    } catch (e) {
+      statusRegistro.className = "err";
+      statusRegistro.textContent = "❌ " + e.message;
+      btnTomarFoto.disabled = false;
+    }
+  });
+
+  window.seleccionarFotoTemporal = function(index) {
+    if (!fotos[index]) return; 
+    fotoSeleccionada = index;
+    for (let i = 0; i < 3; i++) document.getElementById('step' + (i + 1)).classList.remove('selected');
+    document.getElementById('step' + (index + 1)).classList.add('selected');
+    statusRegistro.className = "ok";
+    statusRegistro.textContent = `Foto ${index + 1} seleccionada.`;
+  };
+
+  window.borrarFoto = function(index) {
+    if (fotos[index] === null) return;
+    fotos[index] = null;
+    descriptores[index] = null;
+    const stepEl = document.getElementById('step' + (index + 1));
+    stepEl.classList.remove('done', 'selected');
+    stepEl.innerHTML = `${index + 1}`;
+
+    if (fotoSeleccionada === index) fotoSeleccionada = -1;
+
+    const fotosTomadas = fotos.filter(f => f !== null).length;
+    if (fotosTomadas < 3) {
+      panelSeleccion.style.display = "none";
+      btnTomarFoto.style.display = "inline-block";
+      btnTomarFoto.disabled = false;
+      btnTomarFoto.textContent = `📸 Tomar Foto ${fotosTomadas + 1}`;
+      statusRegistro.textContent = `Toma la foto ${fotosTomadas + 1}.`;
+    }
+  };
+
+  btnConfirmarFoto.addEventListener("click", () => {
+    if (fotoSeleccionada === -1) return alert("Selecciona una foto.");
+    if (!fotos[0] || !fotos[1] || !fotos[2]) return alert("Faltan fotos.");
+    
+    abrirModal('modal-confirmar-guardar');
+    document.getElementById('modal-guardar-titulo').textContent = idEmpleadoEditando ? "Actualizar Colaborador" : "Registrar Colaborador";
+    document.getElementById('modal-guardar-mensaje').textContent = `¿Confirmas que deseas ${idEmpleadoEditando ? 'actualizar' : 'registrar'} a este colaborador?`;
+    
+    document.getElementById('btn-modal-guardar').onclick = async () => {
+      cerrarModal('modal-confirmar-guardar');
+      const nombre = inputNombre.value.trim();
+      const id = inputId.value.trim();
+
+      btnConfirmarFoto.disabled = true;
+      btnConfirmarFoto.textContent = "⏳ Guardando...";
+
+      try {
+        const descriptorPromedio = new Float32Array(128);
+        for (let i = 0; i < 128; i++) {
+          descriptorPromedio[i] = (descriptores[0][i] + descriptores[1][i] + descriptores[2][i]) / 3;
+        }
+
+        const nuevoEmp = { name: nombre, employeeId: id, descriptor: descriptorPromedio, foto: fotos[fotoSeleccionada] };
+        await guardarEmpleadoDB(nuevoEmp);
+        await cargarTodoDB();
+        reiniciarFormulario();
+        
+        statusRegistro.className = "ok";
+        statusRegistro.textContent = `✅ Colaborador ${idEmpleadoEditando ? 'actualizado' : 'registrado'} correctamente.`;
+        idEmpleadoEditando = null;
+        botonMostrado = false;
+
+      } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("Error: " + error);
+      } finally {
+        btnConfirmarFoto.disabled = false;
+        btnConfirmarFoto.textContent = "Confirmar y Guardar";
+      }
+    };
+  });
+
+  btnReiniciar.addEventListener("click", reiniciarFormulario);
+
+  function reiniciarFormulario() {
+    fotos = [null, null, null];
+    descriptores = [null, null, null];
+    fotoSeleccionada = -1;
+    idEmpleadoEditando = null;
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById('step' + i);
+      el.className = 'capture-step';
+      el.innerHTML = `${i}`;
+    }
+    btnTomarFoto.textContent = "📸 Tomar Foto 1";
+    btnTomarFoto.style.display = "inline-block";
+    btnTomarFoto.disabled = false;
+    btnReiniciar.style.display = "none";
+    panelSeleccion.style.display = "none";
+    inputNombre.value = "";
+    inputId.value = "";
+    inputId.disabled = false;
+    statusRegistro.className = "";
+    statusRegistro.textContent = "Cámara lista. Toma la primera foto.";
+  }
+
+  function obtenerUbicacion() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject("GPS no soportado");
+      navigator.geolocation.getCurrentPosition(
+        p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy }),
+        e => reject("Error de GPS: " + e.message),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    });
+  }
+
+  async function validarUbicacion() {
+    statusEl.textContent = "Obteniendo ubicación GPS...";
+    let ubicacion = await obtenerUbicacion();
+    
+    if (VALIDAR_UBICACION) {
+      const dist = calcularDistancia(ubicacion.lat, ubicacion.lng, OFICINA_LAT, OFICINA_LON);
+      if (dist > RADIO_METROS) throw new Error(`Estás a ${dist.toFixed(0)}m. Debes estar a menos de ${RADIO_METROS}m.`);
+      ubicacion.distancia = dist;
+    }
+    return ubicacion;
+  }
+
+  function capturarFoto(videoElement) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 200; 
+    canvas.height = 150;
+    canvas.getContext("2d").drawImage(videoElement, 0, 0, 200, 150);
+    return canvas.toDataURL("image/jpeg", 0.3); 
+  }
+
+  btnEntrada.addEventListener("click", async () => {
+    if (!rostroActual) return alert("No hay rostro reconocido.");
+    guardando = true;
+    const empTemp = { ...rostroActual };
+
+    try {
+      const ubicacion = await validarUbicacion();
+      const foto = capturarFoto(videoScanner);
+      const fecha = hoyISO();
+      
+      const registros = await new Promise(res => {
+        const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
+        req.onsuccess = () => res(req.result);
+      });
+
+      const yaEntro = registros.some(r => r.tipo === "ENTRADA" && r.id === empTemp.employeeId && r.hora.startsWith(fecha));
+      if (yaEntro) throw new Error("Ya registraste entrada hoy.");
+
+      const nuevoReg = { tipo: "ENTRADA", id: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
+      await guardarRegistroDB(nuevoReg);
+      await renderTablaRegistros();
+      
+      statusEl.className = "ok";
+      statusEl.textContent = `✅ Entrada registrada para ${empTemp.name}`;
+    } catch (e) {
+      statusEl.className = "err";
+      statusEl.textContent = "❌ " + e.message;
+    } finally {
+      guardando = false;
+      setTimeout(() => { if(rostroActual) btnEntrada.disabled = false; }, 3000);
+    }
+  });
+
+  btnSalida.addEventListener("click", async () => {
+    if (!rostroActual) return alert("No hay rostro reconocido.");
+    guardando = true;
+    const empTemp = { ...rostroActual };
+
+    try {
+      const fecha = hoyISO();
+      const registros = await new Promise(res => {
+        const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
+        req.onsuccess = () => res(req.result);
+      });
+      
+      const entrada = registros.find(r => r.tipo === "ENTRADA" && r.id === empTemp.employeeId && r.hora.startsWith(fecha));
+      if (!entrada) throw new Error("No hay entrada registrada hoy.");
+      
+      const yaSalio = registros.some(r => r.tipo === "SALIDA" && r.id === empTemp.employeeId && r.hora.startsWith(fecha));
+      if (yaSalio) throw new Error("Ya registraste salida hoy.");
+
+      const diffHoras = (Date.now() - new Date(entrada.hora).getTime()) / 3600000;
+      if (diffHoras < HORAS_REQUERIDAS) throw new Error(`Faltan ${(HORAS_REQUERIDAS - diffHoras).toFixed(2)} horas.`);
+
+      const ubicacion = await validarUbicacion();
+      const foto = capturarFoto(videoScanner);
+      
+      const nuevoReg = { tipo: "SALIDA", id: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
+      await guardarRegistroDB(nuevoReg);
+      await renderTablaRegistros();
+      
+      statusEl.className = "ok";
+      statusEl.textContent = `✅ Salida registrada para ${empTemp.name}`;
+    } catch (e) {
+      statusEl.className = "err";
+      statusEl.textContent = "❌ " + e.message;
+    } finally {
+      guardando = false;
+      setTimeout(() => { if(rostroActual) btnSalida.disabled = false; }, 3000);
+    }
+  });
+
+  document.getElementById("btnExportarCSV").addEventListener("click", () => {
+    const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
+    req.onsuccess = () => {
+      const registros = req.result;
+      if (registros.length === 0) return alert("No hay registros.");
+      let csvContent = "Empleado,ID,Tipo,Fecha y Hora,Latitud,Longitud\n";
+      registros.forEach(r => {
+        const fecha = new Date(r.hora).toLocaleString();
+        const lat = r.ubicacion ? r.ubicacion.lat : "";
+        const lng = r.ubicacion ? r.ubicacion.lng : "";
+        csvContent += `"${r.name}","${r.id}","${r.tipo}","${fecha}","${lat}","${lng}"\n`;
+      });
+      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `historial_asistencias_${hoyISO()}.csv`;
+      link.click();
+    };
+  });
+
+  document.getElementById("btnVaciarHistorial").addEventListener("click", () => {
+    abrirModal('modal-confirmar-guardar');
+    document.getElementById('modal-guardar-titulo').textContent = "Borrar Historial";
+    document.getElementById('modal-guardar-mensaje').textContent = "⚠️ ¿Estás seguro de borrar TODO el historial de asistencias? Los colaboradores NO se borrarán.";
+    document.getElementById('btn-modal-guardar').onclick = () => {
+      cerrarModal('modal-confirmar-guardar');
+      const tx = db.transaction("registros", "readwrite");
+      tx.objectStore("registros").clear();
+      tx.oncomplete = () => { renderTablaRegistros(); alert("✅ Historial borrado."); };
+    };
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
