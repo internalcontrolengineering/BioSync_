@@ -282,6 +282,12 @@
   <!-- BIOMÉTRICO -->
   <div id="tab-escaner" class="tab-content active">
     <div class="card">
+      
+      <div id="bloqueo-camara" style="display: none; margin-bottom: 20px;">
+        <p style="color: var(--danger); font-weight: 600; margin-bottom: 15px;">El navegador ha bloqueado la cámara automática.</p>
+        <button class="action entrada" onclick="encenderCamara(true)">Toca aquí para encender la cámara</button>
+      </div>
+
       <div class="video-wrap" id="video-wrap-scanner">
         <video id="videoScanner" width="400" height="300" autoplay muted playsinline></video>
         <canvas id="overlayScanner" class="overlay" width="400" height="300"></canvas>
@@ -484,6 +490,8 @@
   
   let streamGlobal = null;
   let db;
+  let bucleActivo = false; 
+  let primerCuadroListo = false;
 
   const videoScanner = document.getElementById("videoScanner");
   const overlayScanner = document.getElementById("overlayScanner");
@@ -493,6 +501,7 @@
   const btnSalida = document.getElementById("btnSalida");
   const accionesAsistencia = document.getElementById("acciones-asistencia");
   const avisoRostro = document.getElementById("aviso-rostro");
+  const bloqueoCamara = document.getElementById("bloqueo-camara");
   
   const videoRegistro = document.getElementById("videoRegistro");
   const statusRegistro = document.getElementById("statusRegistro");
@@ -579,8 +588,24 @@
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
       
-      if (btn.dataset.tab === 'empleados') renderTablaEmpleados();
+      if (btn.dataset.tab === 'empleados') {
+        renderTablaEmpleados();
+        if (streamGlobal) {
+          videoRegistro.srcObject = streamGlobal;
+          videoScanner.srcObject = null;
+        }
+      }
       if (btn.dataset.tab === 'registros') renderTablaRegistros();
+      if (btn.dataset.tab === 'escaner') {
+        if (streamGlobal) {
+          videoScanner.srcObject = streamGlobal;
+          videoRegistro.srcObject = null;
+          if (!bucleActivo && listo) {
+            primerCuadroListo = true;
+            iniciarEscaneo();
+          }
+        }
+      }
     });
   });
 
@@ -589,9 +614,9 @@
     reiniciarFormulario();
     document.querySelector('[data-tab="escaner"]').click();
     statusEl.textContent = "Módulo bloqueado.";
-    if(videoRegistro.srcObject) {
+    if (videoRegistro.srcObject) {
        videoRegistro.srcObject = null;
-       if(streamGlobal) videoScanner.srcObject = streamGlobal;
+       if (streamGlobal) videoScanner.srcObject = streamGlobal;
     }
   }
 
@@ -621,7 +646,7 @@
   checkCamaraAuto.addEventListener('change', (e) => {
     localStorage.setItem("autoCamara", e.target.checked);
     if (e.target.checked) {
-      encenderCamara();
+      encenderCamara(true);
     }
   });
 
@@ -819,24 +844,49 @@
     };
   };
 
-  async function encenderCamara() {
+  // ===== FLUJO DE CÁMARA Y RECONOCIMIENTO =====
+  
+  function iniciarEscaneo() {
+    if (bucleActivo) return;
+    bucleActivo = true;
+    requestAnimationFrame(loopDeteccion);
+  }
+
+  async function encenderCamara(forzar = false) {
+    if (streamGlobal && !forzar) return; 
+
     try {
+      bloqueoCamara.style.display = "none";
+      statusEl.className = "";
       statusEl.textContent = "Encendiendo cámara...";
-      statusRegistro.textContent = "Encendiendo cámara...";
+      primerCuadroListo = false;
+      bucleActivo = false;
       
-      streamGlobal = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 300 } });
-      
-      const tabActiva = document.querySelector('.tab-btn.active').dataset.tab;
-      if (tabActiva === 'empleados') {
-        videoRegistro.srcObject = streamGlobal;
-      } else {
-        videoScanner.srcObject = streamGlobal;
+      if (streamGlobal) {
+        streamGlobal.getTracks().forEach(track => track.stop());
+        streamGlobal = null;
       }
 
-      await Promise.all([
-        new Promise(res => { if (videoScanner.readyState >= 2) res(); else videoScanner.onloadedmetadata = () => res(); }),
-        new Promise(res => { if (videoRegistro.readyState >= 2) res(); else videoRegistro.onloadedmetadata = () => res(); })
-      ]);
+      streamGlobal = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 400 }, 
+          height: { ideal: 300 },
+          facingMode: "user"
+        } 
+      });
+      
+      videoScanner.srcObject = streamGlobal;
+      videoRegistro.srcObject = null;
+
+      await new Promise((resolve) => {
+        if (videoScanner.readyState >= 2) {
+          resolve();
+        } else {
+          videoScanner.onloadedmetadata = () => resolve();
+        }
+      });
+
+      await videoScanner.play().catch(() => {});
 
       listo = true;
       btnTomarFoto.disabled = false;
@@ -846,14 +896,21 @@
       statusEl.className = "ok";
       statusEl.textContent = "Acérquese a la cámara para registrar su asistencia.";
       
-      loopDeteccion();
+      setTimeout(() => {
+        primerCuadroListo = true;
+        iniciarEscaneo();
+      }, 400);
 
     } catch (e) {
-      console.error(e);
+      console.error("Error cámara:", e);
       statusEl.className = "err";
-      statusEl.textContent = "Error de cámara: " + e;
+      statusEl.textContent = "Error de cámara: " + e.message;
       statusRegistro.className = "err";
-      statusRegistro.textContent = "Error de cámara: " + e;
+      statusRegistro.textContent = "Error de cámara: " + e.message;
+      
+      if (!forzar && localStorage.getItem("autoCamara") !== "false") {
+        bloqueoCamara.style.display = "block";
+      }
     }
   }
 
@@ -869,21 +926,28 @@
 
       const autoCam = localStorage.getItem("autoCamara") !== "false";
       if (autoCam) {
-        await encenderCamara();
+        setTimeout(() => {
+          encenderCamara(true);
+        }, 600);
       } else {
         statusEl.className = "";
-        statusEl.textContent = "Cámara apagada por configuración. Presiona el escudo para encenderla.";
+        statusEl.textContent = "Cámara apagada por configuración.";
       }
       
     } catch (e) {
-      console.error(e);
+      console.error("Error init:", e);
       statusEl.className = "err";
-      statusEl.textContent = "Error: " + e;
+      statusEl.textContent = "Error: " + e.message;
     }
   }
 
   async function loopDeteccion() {
-    if (videoScanner.readyState === 4 && !guardando && videoScanner.srcObject) {
+    if (!primerCuadroListo || videoScanner.readyState < 2 || videoScanner.paused || !videoScanner.srcObject) {
+      setTimeout(() => requestAnimationFrame(loopDeteccion), 300);
+      return;
+    }
+    
+    if (!guardando) {
       const ahora = Date.now();
       const deltaTime = ahora - ultimoFrameTime;
       ultimoFrameTime = ahora;
@@ -941,7 +1005,10 @@
           avisoRostro.style.display = "none";
         }
 
-      } catch (_) {}
+      } catch (err) {
+        setTimeout(() => requestAnimationFrame(loopDeteccion), 400);
+        return;
+      }
     }
     requestAnimationFrame(loopDeteccion);
   }
