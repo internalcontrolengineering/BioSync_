@@ -124,11 +124,39 @@
   }
   input[type="text"]:focus, input[type="password"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
 
+  /* Ocultar el botón nativo de mostrar contraseña del navegador */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none !important;
+  }
+  input[type="password"]::-webkit-credentials-auto-fill-button,
+  input[type="password"]::-webkit-textfield-decoration-container {
+    display: none !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   /* Tablas */
   table { width: 100%; border-collapse: collapse; font-size: 15px; text-align: left; }
-  th, td { padding: 18px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  th { font-weight: 600; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; }
+  th, td { padding: 14px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
   tr:last-child td { border-bottom: none; }
+  tr.fila-registro { cursor: pointer; transition: background 0.15s; }
+  tr.fila-registro:hover { background: #f8f9fb; }
+  .btn-fila {
+    padding: 7px 12px; font-size: 12px; border-radius: 8px; border: none; cursor: pointer;
+    font-weight: 600; margin: 2px; transition: all 0.15s;
+  }
+  .btn-fila-editar { background: #e8f0fe; color: var(--primary); }
+  .btn-fila-editar:hover { background: #d0e3ff; }
+  .btn-fila-eliminar { background: #fff0f0; color: var(--danger); }
+  .btn-fila-eliminar:hover { background: #ffd6d6; }
+  @media (max-width: 700px) {
+    table { font-size: 13px; }
+    th, td { padding: 10px 6px; }
+    .btn-fila { padding: 6px 10px; font-size: 11px; }
+    .foto-tabla { height: 36px; width: 36px; }
+  }
   
   /* Agrupación por Fecha */
   .grupo-fecha {
@@ -231,6 +259,32 @@
     opacity: 0; transition: opacity 0.3s ease;
   }
   .modal-overlay.show { display: flex; opacity: 1; }
+  #modal-confirmar-guardar, #modal-password-accion, #modal-confirmar-eliminar { z-index: 3000; }
+  #modal-foto-ampliada { z-index: 4000; background: rgba(0,0,0,0.85); }
+
+  .filtros-registros {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center;
+  }
+  .filtros-registros select {
+    padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
+    font-size: 14px; background: #fff; min-width: 120px;
+  }
+  .anio-card {
+    background: var(--card); border-radius: 16px; margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid var(--border); overflow: hidden;
+  }
+  .anio-header {
+    padding: 16px 20px; font-weight: 700; font-size: 17px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    background: #fbfbfd; user-select: none;
+  }
+  .anio-header:hover { background: #f0f0f5; }
+  .anio-body { display: none; padding: 0 12px 16px; }
+  .anio-card.open .anio-body { display: block; }
+  .anio-card.open .anio-chevron { transform: rotate(180deg); }
+  .anio-chevron { transition: transform 0.2s; font-size: 14px; color: var(--text-muted); }
+  .foto-clickable { cursor: zoom-in; transition: transform 0.15s; }
+  .foto-clickable:hover { transform: scale(1.08); }
   .modal-box {
     background: var(--card); width: 90%; max-width: 360px;
     border-radius: 28px; padding: 28px; text-align: center;
@@ -356,15 +410,41 @@
   <!-- REGISTRO DE ASISTENCIAS -->
   <div id="tab-registros" class="tab-content">
     <div class="card" style="text-align: left; padding: 25px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
         <h2 style="margin: 0;">Registro de Asistencias</h2>
         <div style="display: flex; gap: 10px;">
           <button id="btnExportarCSV" class="action exportar" style="padding: 12px 20px; font-size: 14px;">Exportar a Excel</button>
-          <button id="btnVaciarHistorial" class="action btn-vaciar" style="padding: 12px 20px; font-size: 14px;">Borrar Todo</button>
+        </div>
+      </div>
+
+      <div class="filtros-registros">
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Año</label>
+          <select id="filtro-anio">
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Mes</label>
+          <select id="filtro-mes">
+            <option value="todos">Todos</option>
+            <option value="0">Enero</option>
+            <option value="1">Febrero</option>
+            <option value="2">Marzo</option>
+            <option value="3">Abril</option>
+            <option value="4">Mayo</option>
+            <option value="5">Junio</option>
+            <option value="6">Julio</option>
+            <option value="7">Agosto</option>
+            <option value="8">Septiembre</option>
+            <option value="9">Octubre</option>
+            <option value="10">Noviembre</option>
+            <option value="11">Diciembre</option>
+          </select>
         </div>
       </div>
       
-      <div id="contenedor-registros">
+      <div id="contenedor-registros" style="overflow-x: auto;">
         <p style="text-align: center; color: var(--text-muted);">Cargando registros...</p>
       </div>
     </div>
@@ -390,7 +470,13 @@
     <div class="modal-icon primary">🔒</div>
     <h3 id="titulo-modal-pass">Acceso Restringido</h3>
     <p id="desc-modal-pass">Ingresa la contraseña de administrador para continuar.</p>
-    <input type="password" id="input-password" placeholder="Contraseña">
+    <div style="position: relative; width: 100%; margin-bottom: 24px;">
+      <input type="password" id="input-password" placeholder="Contraseña" style="margin-bottom: 0; padding-right: 48px;">
+      <button type="button" onclick="togglePasswordVisibility('input-password', this)" 
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-muted); padding: 4px;">
+        👁️
+      </button>
+    </div>
     <div class="modal-btn-group">
       <button class="cancel" onclick="cerrarModal('modal-password')">Cancelar</button>
       <button class="confirm-primary" onclick="validarPasswordAdmin()">Ingresar</button>
@@ -400,7 +486,7 @@
 
 <!-- Modal: Configuraciones -->
 <div id="modal-configuraciones" class="modal-overlay">
-  <div class="modal-box" style="text-align: left;">
+  <div class="modal-box" style="text-align: left; max-width: 400px;">
     <div class="modal-icon primary" style="margin: 0 auto 20px;">⚙️</div>
     <h3 style="text-align: center; margin-bottom: 24px;">Configuraciones</h3>
     
@@ -411,12 +497,49 @@
         <span class="slider"></span>
       </label>
     </div>
-    <p style="font-size: 13px; color: var(--text-muted); margin-top: 20px; text-align: center;">
+    <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0; text-align: center;">
       Si se desactiva, la cámara no se encenderá hasta que tomes una acción manual.
     </p>
+
+    <div class="config-row">
+      <span>Permitir ubicación al abrir</span>
+      <label class="switch">
+        <input type="checkbox" id="check-ubicacion-auto">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0; text-align: center;">
+      Solicita el permiso de ubicación una sola vez al abrir la app.
+    </p>
+
+    <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 12px;">
+      <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 10px;">Tiempo mínimo para salida</label>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="flex: 1;">
+          <input type="number" id="input-horas-minimas" min="0" max="23" step="1" value="5" 
+                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
+          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Horas</p>
+        </div>
+        <span style="font-size: 18px; font-weight: 600; color: var(--text-muted);">:</span>
+        <div style="flex: 1;">
+          <input type="number" id="input-minutos-minimos" min="0" max="59" step="1" value="0" 
+                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
+          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Minutos</p>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 0 0;">Por defecto: 5 horas 0 minutos. Puedes poner solo horas, solo minutos, o ambos.</p>
+    </div>
+
+    <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 8px;">
+      <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 8px;">Radio permitido (metros)</label>
+      <input type="number" id="input-radio-metros" min="10" max="5000" step="10" value="100" 
+             style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0;">
+      <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 0 0;">Por defecto: 100 metros</p>
+    </div>
     
     <div class="modal-btn-group" style="margin-top: 24px;">
       <button class="cancel" onclick="cerrarModal('modal-configuraciones')">Cerrar</button>
+      <button class="confirm-primary" onclick="guardarConfiguraciones()">Guardar</button>
     </div>
   </div>
 </div>
@@ -438,7 +561,13 @@
     <div class="modal-icon primary">🔒</div>
     <h3>Confirmar Contraseña</h3>
     <p>Ingresa la contraseña para autorizar esta acción.</p>
-    <input type="password" id="input-password-accion" placeholder="Contraseña">
+    <div style="position: relative; width: 100%; margin-bottom: 24px;">
+      <input type="password" id="input-password-accion" placeholder="Contraseña" style="margin-bottom: 0; padding-right: 48px;">
+      <button type="button" onclick="togglePasswordVisibility('input-password-accion', this)" 
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-muted); padding: 4px;">
+        👁️
+      </button>
+    </div>
     <div class="modal-btn-group">
       <button class="cancel" onclick="cerrarModal('modal-password-accion')">Cancelar</button>
       <button class="confirm-primary" id="btn-modal-password-accion">Aceptar</button>
@@ -458,6 +587,67 @@
   </div>
 </div>
 
+<!-- Modal: Editar Registro de Asistencia -->
+<div id="modal-editar-registro" class="modal-overlay">
+  <div class="modal-box" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-icon primary" style="margin: 0 auto 16px;">✏️</div>
+    <h3 style="text-align: center; margin-bottom: 8px;">Editar Registro</h3>
+    <p id="edit-reg-subtitulo" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;"></p>
+    
+    <div id="edit-bloque-entrada" style="display: none; margin-bottom: 20px; padding: 16px; background: #f0faf3; border-radius: 14px; border: 1px solid #c6e9d0;">
+      <h4 style="margin: 0 0 12px 0; color: #1a7f37;">Entrada</h4>
+      <label style="font-size: 13px; font-weight: 500;">Fecha y hora</label>
+      <input type="datetime-local" id="edit-entrada-hora" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 120px;">
+          <label style="font-size: 13px; font-weight: 500;">Latitud</label>
+          <input type="number" step="any" id="edit-entrada-lat" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+        </div>
+        <div style="flex: 1; min-width: 120px;">
+          <label style="font-size: 13px; font-weight: 500;">Longitud</label>
+          <input type="number" step="any" id="edit-entrada-lng" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+        </div>
+      </div>
+      <label style="font-size: 13px; font-weight: 500;">Foto (subir nueva)</label>
+      <input type="file" id="edit-entrada-foto" accept="image/*" style="width: 100%; margin: 6px 0 8px; font-size: 13px;">
+      <div id="edit-entrada-foto-preview" style="margin-top: 6px;"></div>
+    </div>
+
+    <div id="edit-bloque-salida" style="display: none; margin-bottom: 20px; padding: 16px; background: #fff5f5; border-radius: 14px; border: 1px solid #ffcccc;">
+      <h4 style="margin: 0 0 12px 0; color: #d32f2f;">Salida</h4>
+      <label style="font-size: 13px; font-weight: 500;">Fecha y hora</label>
+      <input type="datetime-local" id="edit-salida-hora" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 120px;">
+          <label style="font-size: 13px; font-weight: 500;">Latitud</label>
+          <input type="number" step="any" id="edit-salida-lat" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+        </div>
+        <div style="flex: 1; min-width: 120px;">
+          <label style="font-size: 13px; font-weight: 500;">Longitud</label>
+          <input type="number" step="any" id="edit-salida-lng" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+        </div>
+      </div>
+      <label style="font-size: 13px; font-weight: 500;">Foto (subir nueva)</label>
+      <input type="file" id="edit-salida-foto" accept="image/*" style="width: 100%; margin: 6px 0 8px; font-size: 13px;">
+      <div id="edit-salida-foto-preview" style="margin-top: 6px;"></div>
+    </div>
+
+    <div class="modal-btn-group" style="flex-wrap: wrap;">
+      <button class="cancel" onclick="cerrarModal('modal-editar-registro')" style="flex: 1;">Cancelar</button>
+      <button class="confirm-danger" id="btn-eliminar-registro-dia" style="flex: 1;">Eliminar</button>
+      <button class="confirm-primary" id="btn-guardar-edicion-registro" style="flex: 1;">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Foto ampliada -->
+<div id="modal-foto-ampliada" class="modal-overlay" onclick="cerrarModal('modal-foto-ampliada')">
+  <div style="text-align: center; max-width: 90vw; max-height: 90vh;" onclick="event.stopPropagation()">
+    <img id="img-foto-ampliada" src="" alt="Foto" style="max-width: 90vw; max-height: 80vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+    <p style="color: #fff; margin-top: 16px; font-size: 14px;">Toca fuera para cerrar</p>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 (function () {
@@ -465,12 +655,15 @@
 
   const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
   const THRESHOLD = 0.55; 
-  const HORAS_REQUERIDAS = 5;
-  const OFICINA_LAT = 20.9674; 
-  const OFICINA_LON = -89.6237;
-  const RADIO_METROS = 100; 
+  const OFICINA_LAT = 20.971006; 
+  const OFICINA_LON = -89.612914;
   const VALIDAR_UBICACION = true; 
   const PASSWORD_ADMIN = "ControlInterno2026";
+  const HORAS_SIN_REGISTRO = 8; // Si pasan más de 8h sin salida → "Sin registro"
+
+  // Valores configurables (se cargan de localStorage)
+  let HORAS_REQUERIDAS = parseFloat(localStorage.getItem("horasMinimas")) || 5;
+  let RADIO_METROS = parseInt(localStorage.getItem("radioMetros")) || 100;
 
   let labeledDescriptors = []; 
   let listo = false;
@@ -620,8 +813,20 @@
     }
   }
 
+  window.togglePasswordVisibility = function(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === "password") {
+      input.type = "text";
+      btn.textContent = "🙈";
+    } else {
+      input.type = "password";
+      btn.textContent = "👁️";
+    }
+  };
+
   window.validarPasswordAdmin = function() {
-    const val = document.getElementById("input-password").value;
+    const input = document.getElementById("input-password");
+    const val = input.value;
     if (val === PASSWORD_ADMIN) {
       cerrarModal('modal-password');
       
@@ -635,11 +840,20 @@
       } else if (accionPendienteAdmin === "config") {
         const autoCam = localStorage.getItem("autoCamara") !== "false";
         checkCamaraAuto.checked = autoCam;
+        const autoUbi = localStorage.getItem("autoUbicacion") !== "false";
+        document.getElementById("check-ubicacion-auto").checked = autoUbi;
+        // Separar horas y minutos
+        const totalMinutos = Math.round(HORAS_REQUERIDAS * 60);
+        document.getElementById("input-horas-minimas").value = Math.floor(totalMinutos / 60);
+        document.getElementById("input-minutos-minimos").value = totalMinutos % 60;
+        document.getElementById("input-radio-metros").value = RADIO_METROS;
         abrirModal('modal-configuraciones');
       }
       accionPendienteAdmin = null;
     } else {
       alert("❌ Contraseña incorrecta.");
+      input.value = "";
+      input.focus();
     }
   };
 
@@ -650,9 +864,45 @@
     }
   });
 
+  document.getElementById("check-ubicacion-auto").addEventListener('change', (e) => {
+    localStorage.setItem("autoUbicacion", e.target.checked);
+    if (e.target.checked) {
+      solicitarPermisoUbicacion();
+    }
+  });
+
+  window.guardarConfiguraciones = function() {
+    let horas = parseInt(document.getElementById("input-horas-minimas").value) || 0;
+    let minutos = parseInt(document.getElementById("input-minutos-minimos").value) || 0;
+    const radio = parseInt(document.getElementById("input-radio-metros").value);
+
+    if (horas < 0 || horas > 23) return alert("Las horas deben ser entre 0 y 23.");
+    if (minutos < 0 || minutos > 59) return alert("Los minutos deben ser entre 0 y 59.");
+    if (horas === 0 && minutos === 0) return alert("Debes indicar al menos 1 minuto de tiempo mínimo.");
+    if (isNaN(radio) || radio < 10 || radio > 5000) return alert("El radio debe ser entre 10 y 5000 metros.");
+
+    // Guardamos como decimal de horas (ej: 5h 30m = 5.5)
+    HORAS_REQUERIDAS = horas + (minutos / 60);
+    RADIO_METROS = radio;
+    localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
+    localStorage.setItem("radioMetros", radio);
+    cerrarModal('modal-configuraciones');
+    alert(`✅ Configuración guardada.\nTiempo mínimo: ${horas}h ${minutos}m\nRadio: ${radio} m`);
+  };
+
   function hoyISO() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // Convierte una fecha ISO (UTC) a la fecha local YYYY-MM-DD
+  function fechaLocalISO(isoString) {
+    const d = new Date(isoString);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function esMismoDiaLocal(isoString, fechaISO) {
+    return fechaLocalISO(isoString) === fechaISO;
   }
 
   function calcularDistancia(lat1, lon1, lat2, lon2) {
@@ -697,10 +947,16 @@
   function guardarRegistroDB(reg) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("registros", "readwrite");
+      // No incluir "id" en el objeto: IndexedDB lo genera automáticamente (autoIncrement)
       const req = tx.objectStore("registros").add(reg);
       req.onsuccess = () => resolve();
-      req.onerror = () => reject("Error al guardar registro");
+      req.onerror = (e) => reject("Error al guardar registro: " + (e.target.error?.message || "clave duplicada"));
     });
+  }
+
+  // ID del colaborador en un registro (compatible con datos antiguos que usaban "id")
+  function getRegEmployeeId(r) {
+    return r.employeeId != null ? r.employeeId : r.id;
   }
 
   async function cargarTodoDB() {
@@ -745,64 +1001,492 @@
     });
   }
 
+  let cacheRegistrosCompletos = [];
+  let registroEditando = null;
+  let fotoEntradaNueva = null;
+  let fotoSalidaNueva = null;
+
   async function renderTablaRegistros() {
-    if(!db) return;
+    if (!db) return;
     const tx = db.transaction("registros", "readonly");
     const req = tx.objectStore("registros").getAll();
-    req.onsuccess = () => { renderRegistrosDesdeArray(req.result.reverse()); };
+    req.onsuccess = () => {
+      cacheRegistrosCompletos = req.result || [];
+      actualizarFiltrosAnio();
+      aplicarFiltrosYRender();
+    };
   }
+
+  function actualizarFiltrosAnio() {
+    const select = document.getElementById("filtro-anio");
+    if (!select) return;
+    const anioActual = select.value || "todos";
+    const anios = new Set();
+    cacheRegistrosCompletos.forEach(r => {
+      if (r.hora) anios.add(new Date(r.hora).getFullYear());
+    });
+    const lista = Array.from(anios).sort((a, b) => b - a);
+    select.innerHTML = '<option value="todos">Todos</option>' +
+      lista.map(a => `<option value="${a}">${a}</option>`).join("");
+    if ([...select.options].some(o => o.value === anioActual)) select.value = anioActual;
+  }
+
+  function aplicarFiltrosYRender() {
+    const anio = document.getElementById("filtro-anio")?.value || "todos";
+    const mes = document.getElementById("filtro-mes")?.value || "todos";
+    let regs = cacheRegistrosCompletos.slice();
+    if (anio !== "todos") {
+      regs = regs.filter(r => new Date(r.hora).getFullYear() === parseInt(anio));
+    }
+    if (mes !== "todos") {
+      regs = regs.filter(r => new Date(r.hora).getMonth() === parseInt(mes));
+    }
+    // más recientes primero
+    regs.sort((a, b) => new Date(b.hora) - new Date(a.hora));
+    renderRegistrosDesdeArray(regs);
+  }
+
+  document.getElementById("filtro-anio")?.addEventListener("change", aplicarFiltrosYRender);
+  document.getElementById("filtro-mes")?.addEventListener("change", aplicarFiltrosYRender);
+
+  function formatUbicacion(ubicacion) {
+    if (!ubicacion) return '<span style="color:var(--text-muted);">N/A</span>';
+    const lat = ubicacion.lat;
+    const lng = ubicacion.lng;
+    const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+    return `<span style="font-size:12px;">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)} <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);text-decoration:none;font-weight:500;" onclick="event.stopPropagation()">📍</a></span>`;
+  }
+
+  function fotoHTML(src) {
+    if (!src) return "—";
+    const safe = src.replace(/'/g, "\\'");
+    return `<img src="${src}" class="foto-tabla foto-clickable" onclick="event.stopPropagation(); ampliarFoto('${safe}')">`;
+  }
+
+  window.ampliarFoto = function(src) {
+    document.getElementById("img-foto-ampliada").src = src;
+    abrirModal("modal-foto-ampliada");
+  };
 
   function renderRegistrosDesdeArray(registros) {
     const contenedor = document.getElementById("contenedor-registros");
     contenedor.innerHTML = "";
-    if (registros.length === 0) {
-      contenedor.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay asistencias registradas aún.</p>';
+    if (!registros || registros.length === 0) {
+      contenedor.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay asistencias registradas con estos filtros.</p>';
       return;
     }
-    const grupos = {};
+
+    // Agrupar por año → día → empleado
+    const porAnio = {};
     registros.forEach(r => {
-      const fecha = new Date(r.hora);
-      const dia = fecha.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
-      if (!grupos[dia]) grupos[dia] = [];
-      grupos[dia].push(r);
+      const d = new Date(r.hora);
+      const anio = d.getFullYear();
+      const diaKey = d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      if (!porAnio[anio]) porAnio[anio] = {};
+      if (!porAnio[anio][diaKey]) porAnio[anio][diaKey] = {};
+      const empId = getRegEmployeeId(r);
+      const empKey = empId + "|" + r.name;
+      if (!porAnio[anio][diaKey][empKey]) {
+        porAnio[anio][diaKey][empKey] = { name: r.name, id: empId, entrada: null, salida: null };
+      }
+      if (r.tipo === "ENTRADA") porAnio[anio][diaKey][empKey].entrada = r;
+      if (r.tipo === "SALIDA") porAnio[anio][diaKey][empKey].salida = r;
     });
 
-    for (const [dia, regs] of Object.entries(grupos)) {
-      const divGrupo = document.createElement("div");
-      divGrupo.className = "grupo-fecha";
-      const titulo = document.createElement("div");
-      titulo.className = "grupo-titulo";
-      titulo.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
-      divGrupo.appendChild(titulo);
+    const ahora = Date.now();
+    const aniosOrden = Object.keys(porAnio).map(Number).sort((a, b) => b - a);
 
-      const table = document.createElement("table");
-      table.innerHTML = `<thead><tr><th>Colaborador</th><th>Tipo</th><th>Hora</th><th>Ubicación</th><th>Foto</th></tr></thead>`;
-      const tbody = document.createElement("tbody");
-      regs.forEach(r => {
-        const tr = document.createElement("tr");
-        const hora = new Date(r.hora).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-        const coords = r.ubicacion ? `${r.ubicacion.lat.toFixed(4)}, ${r.ubicacion.lng.toFixed(4)}` : "N/A";
-        const badge = r.tipo === "ENTRADA" ? '<span class="badge in">ENTRADA</span>' : '<span class="badge out">SALIDA</span>';
-        tr.innerHTML = `
-          <td style="font-weight: 600;">${r.name} <span style="color:var(--text-muted); font-weight:400; font-size:13px;">(#${r.id})</span></td>
-          <td>${badge}</td>
-          <td>${hora}</td>
-          <td style="font-size: 13px; color: var(--text-muted);">${coords}</td>
-          <td>${r.foto ? `<img src="${r.foto}" class="foto-tabla">` : 'Sin foto'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      divGrupo.appendChild(table);
-      contenedor.appendChild(divGrupo);
+    aniosOrden.forEach((anio, idx) => {
+      const card = document.createElement("div");
+      card.className = "anio-card" + (idx === 0 ? " open" : "");
+      const totalDia = Object.keys(porAnio[anio]).length;
+      const header = document.createElement("div");
+      header.className = "anio-header";
+      header.innerHTML = `<span>📅 Año ${anio}</span><span class="anio-chevron">▼</span>`;
+      header.addEventListener("click", () => card.classList.toggle("open"));
+      card.appendChild(header);
+
+      const body = document.createElement("div");
+      body.className = "anio-body";
+
+      for (const [dia, empleados] of Object.entries(porAnio[anio])) {
+        const divGrupo = document.createElement("div");
+        divGrupo.className = "grupo-fecha";
+        const titulo = document.createElement("div");
+        titulo.className = "grupo-titulo";
+        titulo.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
+        divGrupo.appendChild(titulo);
+
+        const wrap = document.createElement("div");
+        wrap.style.overflowX = "auto";
+        const table = document.createElement("table");
+        table.style.minWidth = "900px";
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+              <th>Ubic. Entrada</th>
+              <th>Ubic. Salida</th>
+              <th>Foto E</th>
+              <th>Foto S</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>`;
+        const tbody = document.createElement("tbody");
+
+        Object.values(empleados).forEach(emp => {
+          const tr = document.createElement("tr");
+          tr.className = "fila-registro";
+
+          let entradaHTML = '<span style="color:var(--text-muted);">Sin registro</span>';
+          let fotoE = "—";
+          if (emp.entrada) {
+            const horaE = new Date(emp.entrada.hora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+            entradaHTML = `<span class="badge in">${horaE}</span>`;
+            fotoE = fotoHTML(emp.entrada.foto);
+          }
+
+          let salidaHTML = '<span style="color:var(--text-muted);">Sin registro</span>';
+          let fotoS = "—";
+          if (emp.salida) {
+            const horaS = new Date(emp.salida.hora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+            salidaHTML = `<span class="badge out">${horaS}</span>`;
+            fotoS = fotoHTML(emp.salida.foto);
+          } else if (emp.entrada) {
+            const horasDesde = (ahora - new Date(emp.entrada.hora).getTime()) / 3600000;
+            salidaHTML = horasDesde >= HORAS_SIN_REGISTRO
+              ? '<span style="color:var(--danger);font-weight:600;">Sin registro</span>'
+              : '<span style="color:var(--text-muted);">Pendiente</span>';
+          }
+
+          // Solo IDs de BD (sin fotos pesadas) para evitar fallos
+          const payload = {
+            name: emp.name,
+            employeeId: emp.id,
+            entradaDbId: emp.entrada ? emp.entrada.id : null,
+            salidaDbId: emp.salida ? emp.salida.id : null
+          };
+          const payloadStr = encodeURIComponent(JSON.stringify(payload));
+
+          tr.innerHTML = `
+            <td style="font-weight:600;white-space:nowrap;">${emp.name} <span style="color:var(--text-muted);font-weight:400;font-size:12px;">(#${emp.id})</span></td>
+            <td style="white-space:nowrap;">${entradaHTML}</td>
+            <td style="white-space:nowrap;">${salidaHTML}</td>
+            <td style="white-space:nowrap;">${formatUbicacion(emp.entrada ? emp.entrada.ubicacion : null)}</td>
+            <td style="white-space:nowrap;">${formatUbicacion(emp.salida ? emp.salida.ubicacion : null)}</td>
+            <td>${fotoE}</td>
+            <td>${fotoS}</td>
+            <td style="white-space:nowrap;">
+              <button class="btn-fila btn-fila-editar">Editar</button>
+              <button class="btn-fila btn-fila-eliminar">Eliminar</button>
+            </td>`;
+
+          let lastTap = 0;
+          tr.addEventListener("click", (e) => {
+            if (e.target.closest("button") || e.target.closest("a") || e.target.closest("img")) return;
+            const now = Date.now();
+            if (now - lastTap < 350) solicitarEditarRegistro(payloadStr);
+            lastTap = now;
+          });
+          tr.querySelector(".btn-fila-editar").addEventListener("click", (e) => {
+            e.stopPropagation();
+            solicitarEditarRegistro(payloadStr);
+          });
+          tr.querySelector(".btn-fila-eliminar").addEventListener("click", (e) => {
+            e.stopPropagation();
+            solicitarEliminarRegistroDia(payloadStr);
+          });
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        divGrupo.appendChild(wrap);
+        body.appendChild(divGrupo);
+      }
+
+      card.appendChild(body);
+      contenedor.appendChild(card);
+    });
+  }
+
+  function isoToDatetimeLocal(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const pad = n => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function datetimeLocalToISO(val) {
+    if (!val) return null;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function leerFotoArchivo(input) {
+    return new Promise((resolve) => {
+      if (!input.files || !input.files[0]) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(input.files[0]);
+    });
+  }
+
+  function obtenerRegistroPorDbId(dbId) {
+    return cacheRegistrosCompletos.find(r => r.id === dbId) || null;
+  }
+
+  function solicitarEditarRegistro(payloadEncoded) {
+    abrirModal("modal-password-accion");
+    document.getElementById("btn-modal-password-accion").onclick = () => {
+      const input = document.getElementById("input-password-accion");
+      if (input.value !== PASSWORD_ADMIN) {
+        alert("❌ Contraseña incorrecta.");
+        input.value = "";
+        input.focus();
+        return;
+      }
+      cerrarModal("modal-password-accion");
+      setTimeout(() => abrirEditorRegistro(payloadEncoded), 200);
+    };
+  }
+
+  function solicitarEliminarRegistroDia(payloadEncoded) {
+    abrirModal("modal-password-accion");
+    document.getElementById("btn-modal-password-accion").onclick = () => {
+      const input = document.getElementById("input-password-accion");
+      if (input.value !== PASSWORD_ADMIN) {
+        alert("❌ Contraseña incorrecta.");
+        input.value = "";
+        input.focus();
+        return;
+      }
+      cerrarModal("modal-password-accion");
+      const data = JSON.parse(decodeURIComponent(payloadEncoded));
+      setTimeout(() => {
+        document.getElementById("modal-guardar-titulo").textContent = "Eliminar registro del día";
+        document.getElementById("modal-guardar-mensaje").textContent =
+          `¿Seguro que deseas eliminar el registro de ${data.name} (#${data.employeeId}) de este día? Esta acción no se puede deshacer.`;
+        abrirModal("modal-confirmar-guardar");
+        document.getElementById("btn-modal-guardar").onclick = async () => {
+          cerrarModal("modal-confirmar-guardar");
+          try {
+            if (data.entradaDbId != null) await eliminarRegistroPorId(data.entradaDbId);
+            if (data.salidaDbId != null) await eliminarRegistroPorId(data.salidaDbId);
+            await renderTablaRegistros();
+            alert("✅ Registro eliminado.");
+          } catch (err) {
+            alert("Error al eliminar: " + (err.message || err));
+          }
+        };
+      }, 200);
+    };
+  }
+
+  function abrirEditorRegistro(payloadEncoded) {
+    let data;
+    try {
+      data = JSON.parse(decodeURIComponent(payloadEncoded));
+    } catch (e) {
+      alert("Error al cargar el registro. Intenta de nuevo.");
+      return;
     }
+
+    const entradaFull = data.entradaDbId != null ? obtenerRegistroPorDbId(data.entradaDbId) : null;
+    const salidaFull = data.salidaDbId != null ? obtenerRegistroPorDbId(data.salidaDbId) : null;
+
+    registroEditando = {
+      name: data.name,
+      employeeId: data.employeeId,
+      entrada: entradaFull ? {
+        dbId: entradaFull.id,
+        hora: entradaFull.hora,
+        ubicacion: entradaFull.ubicacion || null,
+        foto: entradaFull.foto || null,
+        employeeId: getRegEmployeeId(entradaFull),
+        name: entradaFull.name,
+        tipo: "ENTRADA"
+      } : null,
+      salida: salidaFull ? {
+        dbId: salidaFull.id,
+        hora: salidaFull.hora,
+        ubicacion: salidaFull.ubicacion || null,
+        foto: salidaFull.foto || null,
+        employeeId: getRegEmployeeId(salidaFull),
+        name: salidaFull.name,
+        tipo: "SALIDA"
+      } : null
+    };
+
+    fotoEntradaNueva = null;
+    fotoSalidaNueva = null;
+
+    document.getElementById("edit-reg-subtitulo").textContent = `${data.name} (#${data.employeeId})`;
+
+    const bloqueE = document.getElementById("edit-bloque-entrada");
+    const bloqueS = document.getElementById("edit-bloque-salida");
+
+    if (registroEditando.entrada) {
+      bloqueE.style.display = "block";
+      const h = isoToDatetimeLocal(registroEditando.entrada.hora);
+      document.getElementById("edit-entrada-hora").value = h;
+      document.getElementById("edit-entrada-lat").value = registroEditando.entrada.ubicacion ? registroEditando.entrada.ubicacion.lat : "";
+      document.getElementById("edit-entrada-lng").value = registroEditando.entrada.ubicacion ? registroEditando.entrada.ubicacion.lng : "";
+      document.getElementById("edit-entrada-foto").value = "";
+      document.getElementById("edit-entrada-foto-preview").innerHTML = registroEditando.entrada.foto
+        ? `<img src="${registroEditando.entrada.foto}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`
+        : "<span style='color:var(--text-muted);font-size:13px;'>Sin foto</span>";
+    } else {
+      bloqueE.style.display = "none";
+    }
+
+    if (registroEditando.salida) {
+      bloqueS.style.display = "block";
+      const h = isoToDatetimeLocal(registroEditando.salida.hora);
+      document.getElementById("edit-salida-hora").value = h;
+      document.getElementById("edit-salida-lat").value = registroEditando.salida.ubicacion ? registroEditando.salida.ubicacion.lat : "";
+      document.getElementById("edit-salida-lng").value = registroEditando.salida.ubicacion ? registroEditando.salida.ubicacion.lng : "";
+      document.getElementById("edit-salida-foto").value = "";
+      document.getElementById("edit-salida-foto-preview").innerHTML = registroEditando.salida.foto
+        ? `<img src="${registroEditando.salida.foto}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`
+        : "<span style='color:var(--text-muted);font-size:13px;'>Sin foto</span>";
+    } else {
+      bloqueS.style.display = "none";
+    }
+
+    if (!registroEditando.entrada && !registroEditando.salida) {
+      alert("No se encontró información del registro.");
+      return;
+    }
+
+    abrirModal("modal-editar-registro");
+  }
+
+  document.getElementById("edit-entrada-foto").addEventListener("change", async (e) => {
+    fotoEntradaNueva = await leerFotoArchivo(e.target);
+    if (fotoEntradaNueva) {
+      document.getElementById("edit-entrada-foto-preview").innerHTML =
+        `<img src="${fotoEntradaNueva}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`;
+    }
+  });
+  document.getElementById("edit-salida-foto").addEventListener("change", async (e) => {
+    fotoSalidaNueva = await leerFotoArchivo(e.target);
+    if (fotoSalidaNueva) {
+      document.getElementById("edit-salida-foto-preview").innerHTML =
+        `<img src="${fotoSalidaNueva}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`;
+    }
+  });
+
+  document.getElementById("btn-guardar-edicion-registro").addEventListener("click", () => {
+    if (!registroEditando) return;
+    // Cerrar editor primero para que el modal de confirmación se vea bien
+    cerrarModal("modal-editar-registro");
+    setTimeout(() => {
+      document.getElementById("modal-guardar-titulo").textContent = "Guardar cambios";
+      document.getElementById("modal-guardar-mensaje").textContent = "¿Confirmas guardar los cambios en este registro?";
+      abrirModal("modal-confirmar-guardar");
+      document.getElementById("btn-modal-guardar").onclick = async () => {
+        cerrarModal("modal-confirmar-guardar");
+        try {
+          if (registroEditando.entrada) {
+            const hora = datetimeLocalToISO(document.getElementById("edit-entrada-hora").value);
+            const lat = parseFloat(document.getElementById("edit-entrada-lat").value);
+            const lng = parseFloat(document.getElementById("edit-entrada-lng").value);
+            const reg = {
+              id: registroEditando.entrada.dbId,
+              tipo: "ENTRADA",
+              employeeId: registroEditando.entrada.employeeId,
+              name: registroEditando.entrada.name,
+              hora: hora || registroEditando.entrada.hora,
+              foto: fotoEntradaNueva || registroEditando.entrada.foto,
+              ubicacion: (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : (registroEditando.entrada.ubicacion || null)
+            };
+            await actualizarRegistroDB(reg);
+          }
+          if (registroEditando.salida) {
+            const hora = datetimeLocalToISO(document.getElementById("edit-salida-hora").value);
+            const lat = parseFloat(document.getElementById("edit-salida-lat").value);
+            const lng = parseFloat(document.getElementById("edit-salida-lng").value);
+            const reg = {
+              id: registroEditando.salida.dbId,
+              tipo: "SALIDA",
+              employeeId: registroEditando.salida.employeeId,
+              name: registroEditando.salida.name,
+              hora: hora || registroEditando.salida.hora,
+              foto: fotoSalidaNueva || registroEditando.salida.foto,
+              ubicacion: (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : (registroEditando.salida.ubicacion || null)
+            };
+            await actualizarRegistroDB(reg);
+          }
+          registroEditando = null;
+          await renderTablaRegistros();
+          alert("✅ Cambios guardados.");
+        } catch (err) {
+          alert("Error al guardar: " + (err.message || err));
+        }
+      };
+    }, 250);
+  });
+
+  document.getElementById("btn-eliminar-registro-dia").addEventListener("click", () => {
+    if (!registroEditando) return;
+    const data = registroEditando;
+    cerrarModal("modal-editar-registro");
+    setTimeout(() => {
+      document.getElementById("modal-guardar-titulo").textContent = "Eliminar registro del día";
+      document.getElementById("modal-guardar-mensaje").textContent =
+        `¿Seguro que deseas eliminar el registro de ${data.name} (#${data.employeeId}) de este día?`;
+      abrirModal("modal-confirmar-guardar");
+      document.getElementById("btn-modal-guardar").onclick = async () => {
+        cerrarModal("modal-confirmar-guardar");
+        try {
+          if (data.entrada && data.entrada.dbId != null) await eliminarRegistroPorId(data.entrada.dbId);
+          if (data.salida && data.salida.dbId != null) await eliminarRegistroPorId(data.salida.dbId);
+          registroEditando = null;
+          await renderTablaRegistros();
+          alert("✅ Registro eliminado.");
+        } catch (err) {
+          alert("Error al eliminar: " + (err.message || err));
+        }
+      };
+    }, 250);
+  });
+
+  function actualizarRegistroDB(reg) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("registros", "readwrite");
+      const req = tx.objectStore("registros").put(reg);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e.target.error?.message || "Error al actualizar");
+    });
+  }
+
+  function eliminarRegistroPorId(id) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("registros", "readwrite");
+      const req = tx.objectStore("registros").delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject(e.target.error?.message || "Error al eliminar");
+    });
   }
 
   window.editarEmpleado = function(id) {
     abrirModal('modal-password-accion');
     document.getElementById('btn-modal-password-accion').onclick = () => {
-      const pass = document.getElementById("input-password-accion").value;
-      if (pass !== PASSWORD_ADMIN) return alert("❌ Contraseña incorrecta.");
+      const input = document.getElementById("input-password-accion");
+      const pass = input.value;
+      if (pass !== PASSWORD_ADMIN) {
+        alert("❌ Contraseña incorrecta.");
+        input.value = "";
+        input.focus();
+        return;
+      }
       cerrarModal('modal-password-accion');
       const emp = labeledDescriptors.find(e => e.employeeId === id);
       if (!emp) return;
@@ -833,8 +1517,14 @@
       cerrarModal('modal-confirmar-eliminar');
       abrirModal('modal-password-accion');
       document.getElementById('btn-modal-password-accion').onclick = async () => {
-        const pass = document.getElementById("input-password-accion").value;
-        if (pass !== PASSWORD_ADMIN) return alert("❌ Contraseña incorrecta.");
+        const input = document.getElementById("input-password-accion");
+        const pass = input.value;
+        if (pass !== PASSWORD_ADMIN) {
+          alert("❌ Contraseña incorrecta.");
+          input.value = "";
+          input.focus();
+          return;
+        }
         cerrarModal('modal-password-accion');
         try {
           await eliminarEmpleadoDB(id);
@@ -932,6 +1622,12 @@
       } else {
         statusEl.className = "";
         statusEl.textContent = "Cámara apagada por configuración.";
+      }
+
+      // Solicitar permiso de ubicación de forma anticipada si está activado
+      const autoUbi = localStorage.getItem("autoUbicacion") !== "false";
+      if (autoUbi) {
+        setTimeout(() => solicitarPermisoUbicacion(), 1200);
       }
       
     } catch (e) {
@@ -1140,6 +1836,13 @@
         idEmpleadoEditando = null;
         botonMostrado = false;
 
+        // Cerrar automáticamente el módulo de registro y volver a Biométrico de Asistencia
+        setTimeout(() => {
+          bloquearModulo();
+          statusEl.className = "ok";
+          statusEl.textContent = "✅ Colaborador guardado. Listo para registrar asistencia.";
+        }, 800);
+
       } catch (error) {
         console.error("Error al guardar:", error);
         alert("Error: " + error);
@@ -1174,24 +1877,105 @@
     statusRegistro.textContent = "Cámara lista. Toma la primera foto.";
   }
 
+  function solicitarPermisoUbicacion() {
+    // Solicita el permiso una sola vez (sin validar distancia) para que el navegador lo recuerde.
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      () => {},
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
   function obtenerUbicacion() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) return reject("GPS no soportado");
-      navigator.geolocation.getCurrentPosition(
-        p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy }),
-        e => reject("Error de GPS: " + e.message),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      };
+
+      let mejorLectura = null;
+      let watchId = null;
+      let terminado = false;
+
+      const finalizar = (resultado) => {
+        if (terminado) return;
+        terminado = true;
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        resolve(resultado);
+      };
+
+      const fallar = (msg) => {
+        if (terminado) return;
+        terminado = true;
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        reject(msg);
+      };
+
+      // Usamos watchPosition para obtener varias lecturas y quedarnos con la de mejor precisión
+      watchId = navigator.geolocation.watchPosition(
+        (p) => {
+          const accuracy = p.coords.accuracy || 999;
+          const lectura = {
+            lat: p.coords.latitude,
+            lng: p.coords.longitude,
+            precision: accuracy
+          };
+
+          if (!mejorLectura || accuracy < mejorLectura.precision) {
+            mejorLectura = lectura;
+            statusEl.textContent = `Mejorando precisión GPS... (±${Math.round(accuracy)} m)`;
+          }
+
+          // Si ya tenemos una precisión aceptable (< 50 m) terminamos rápido
+          if (accuracy <= 50) {
+            finalizar(mejorLectura);
+          }
+        },
+        (e) => {
+          navigator.geolocation.getCurrentPosition(
+            (p) => {
+              finalizar({
+                lat: p.coords.latitude,
+                lng: p.coords.longitude,
+                precision: p.coords.accuracy || 999
+              });
+            },
+            () => fallar("Error de GPS: " + e.message),
+            options
+          );
+        },
+        options
       );
+
+      // Tiempo máximo reducido a 6 segundos para registros más rápidos
+      setTimeout(() => {
+        if (mejorLectura) {
+          finalizar(mejorLectura);
+        } else {
+          fallar("No se pudo obtener una ubicación precisa. Asegúrate de tener el GPS activado.");
+        }
+      }, 6000);
     });
   }
 
   async function validarUbicacion() {
-    statusEl.textContent = "Obteniendo ubicación GPS...";
+    statusEl.textContent = "Obteniendo ubicación GPS de alta precisión...";
     let ubicacion = await obtenerUbicacion();
     
     if (VALIDAR_UBICACION) {
       const dist = calcularDistancia(ubicacion.lat, ubicacion.lng, OFICINA_LAT, OFICINA_LON);
-      if (dist > RADIO_METROS) throw new Error(`Estás a ${dist.toFixed(0)}m. Debes estar a menos de ${RADIO_METROS}m.`);
+      if (dist > RADIO_METROS) {
+        throw new Error(
+          `Estás a ${dist.toFixed(0)} m de la oficina (límite: ${RADIO_METROS} m).\n` +
+          `Precisión GPS: ±${Math.round(ubicacion.precision)} m.\n` +
+          `Coordenadas detectadas: ${ubicacion.lat.toFixed(6)}, ${ubicacion.lng.toFixed(6)}\n` +
+          `Debes estar en el lugar autorizado.`
+        );
+      }
       ubicacion.distancia = dist;
     }
     return ubicacion;
@@ -1220,10 +2004,11 @@
         req.onsuccess = () => res(req.result);
       });
 
-      const yaEntro = registros.some(r => r.tipo === "ENTRADA" && r.id === empTemp.employeeId && r.hora.startsWith(fecha));
+      const yaEntro = registros.some(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
       if (yaEntro) throw new Error("Ya registraste entrada hoy.");
 
-      const nuevoReg = { tipo: "ENTRADA", id: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
+      // Usar employeeId (no "id") para no chocar con el keyPath autoIncrement de IndexedDB
+      const nuevoReg = { tipo: "ENTRADA", employeeId: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
       await guardarRegistroDB(nuevoReg);
       await renderTablaRegistros();
       
@@ -1231,7 +2016,7 @@
       statusEl.textContent = `✅ Entrada registrada para ${empTemp.name}`;
     } catch (e) {
       statusEl.className = "err";
-      statusEl.textContent = "❌ " + e.message;
+      statusEl.textContent = "❌ " + (e.message || e);
     } finally {
       guardando = false;
       setTimeout(() => { if(rostroActual) btnEntrada.disabled = false; }, 3000);
@@ -1250,19 +2035,29 @@
         req.onsuccess = () => res(req.result);
       });
       
-      const entrada = registros.find(r => r.tipo === "ENTRADA" && r.id === empTemp.employeeId && r.hora.startsWith(fecha));
+      const entrada = registros.find(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
       if (!entrada) throw new Error("No hay entrada registrada hoy.");
       
-      const yaSalio = registros.some(r => r.tipo === "SALIDA" && r.id === empTemp.employeeId && r.hora.startsWith(fecha));
+      const yaSalio = registros.some(r => r.tipo === "SALIDA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
       if (yaSalio) throw new Error("Ya registraste salida hoy.");
 
       const diffHoras = (Date.now() - new Date(entrada.hora).getTime()) / 3600000;
-      if (diffHoras < HORAS_REQUERIDAS) throw new Error(`Faltan ${(HORAS_REQUERIDAS - diffHoras).toFixed(2)} horas.`);
+      if (diffHoras < HORAS_REQUERIDAS) {
+        const faltan = HORAS_REQUERIDAS - diffHoras;
+        const horas = Math.floor(faltan);
+        const minutos = Math.round((faltan - horas) * 60);
+        let msg = "Faltan ";
+        if (horas > 0) msg += `${horas} hora${horas !== 1 ? 's' : ''}`;
+        if (horas > 0 && minutos > 0) msg += " y ";
+        if (minutos > 0 || horas === 0) msg += `${minutos} minuto${minutos !== 1 ? 's' : ''}`;
+        msg += " para el registro de salida.";
+        throw new Error(msg);
+      }
 
       const ubicacion = await validarUbicacion();
       const foto = capturarFoto(videoScanner);
       
-      const nuevoReg = { tipo: "SALIDA", id: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
+      const nuevoReg = { tipo: "SALIDA", employeeId: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
       await guardarRegistroDB(nuevoReg);
       await renderTablaRegistros();
       
@@ -1270,7 +2065,7 @@
       statusEl.textContent = `✅ Salida registrada para ${empTemp.name}`;
     } catch (e) {
       statusEl.className = "err";
-      statusEl.textContent = "❌ " + e.message;
+      statusEl.textContent = "❌ " + (e.message || e);
     } finally {
       guardando = false;
       setTimeout(() => { if(rostroActual) btnSalida.disabled = false; }, 3000);
@@ -1282,30 +2077,19 @@
     req.onsuccess = () => {
       const registros = req.result;
       if (registros.length === 0) return alert("No hay registros.");
-      let csvContent = "Empleado,ID,Tipo,Fecha y Hora,Latitud,Longitud\n";
+      let csvContent = "Empleado,ID,Tipo,Fecha y Hora,Latitud,Longitud,Link Google Maps\n";
       registros.forEach(r => {
         const fecha = new Date(r.hora).toLocaleString();
         const lat = r.ubicacion ? r.ubicacion.lat : "";
         const lng = r.ubicacion ? r.ubicacion.lng : "";
-        csvContent += `"${r.name}","${r.id}","${r.tipo}","${fecha}","${lat}","${lng}"\n`;
+        const mapsLink = (lat && lng) ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+        csvContent += `"${r.name}","${getRegEmployeeId(r)}","${r.tipo}","${fecha}","${lat}","${lng}","${mapsLink}"\n`;
       });
       const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `historial_asistencias_${hoyISO()}.csv`;
       link.click();
-    };
-  });
-
-  document.getElementById("btnVaciarHistorial").addEventListener("click", () => {
-    abrirModal('modal-confirmar-guardar');
-    document.getElementById('modal-guardar-titulo').textContent = "Borrar Historial";
-    document.getElementById('modal-guardar-mensaje').textContent = "⚠️ ¿Estás seguro de borrar TODO el historial de asistencias? Los colaboradores NO se borrarán.";
-    document.getElementById('btn-modal-guardar').onclick = () => {
-      cerrarModal('modal-confirmar-guardar');
-      const tx = db.transaction("registros", "readwrite");
-      tx.objectStore("registros").clear();
-      tx.oncomplete = () => { renderTablaRegistros(); alert("✅ Historial borrado."); };
     };
   });
 
