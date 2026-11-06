@@ -80,9 +80,7 @@
   /* --- Mejoras UI --- */
   #modal-configuraciones .modal-box,
   #modal-editar-colaborador .modal-box {
-    width: min(420px, calc(100vw - 32px));
-    max-height: min(640px, 86vh);
-    overflow-y: auto; overscroll-behavior: contain; padding-right: 6px;
+    overscroll-behavior: contain;
   }
   #modal-configuraciones .modal-box::-webkit-scrollbar,
   #modal-editar-colaborador .modal-box::-webkit-scrollbar { width: 8px; }
@@ -153,10 +151,10 @@
   button.action:active { transform: scale(0.96); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
   button.action:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
   button.entrada { background: var(--primary); color: white; }
-  button.salida { background: #f5f5f7; color: var(--danger); border: 1px solid var(--border); }
+  button.salida { background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; }
   button.registro { background: var(--success); color: white; }
-  button.secondary { background: #f5f5f7; color: var(--text); border: 1px solid var(--border); }
-  button.exportar { background: #f5f5f7; color: var(--text); border: 1px solid var(--border); margin-bottom: 15px; }
+  button.secondary { background: #6e6e73; color: #fff; border: 1px solid #5c5c61; }
+  button.exportar { background: #eef3ff; color: var(--primary); border: 1px solid #dbe4ff; margin-bottom: 15px; }
   button.btn-vaciar { background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; margin-bottom: 15px; }
   
   /* Aviso Rostro */
@@ -167,12 +165,12 @@
   #aviso-rostro p { margin: 0 0 15px 0; font-size: 16px; font-weight: 500; }
 
   /* Inputs */
-  input[type="text"], input[type="password"] {
+  input[type="text"], input[type="password"], input[type="number"] {
     padding: 14px 18px; width: 100%; max-width: 320px; border: 1px solid var(--border);
     border-radius: 12px; font-size: 15px; margin-bottom: 12px; outline: none; transition: all 0.2s;
     background: #fbfbfb;
   }
-  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
+  input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
 
   /* Ocultar el botón nativo de mostrar contraseña del navegador */
   input[type="password"]::-ms-reveal,
@@ -311,6 +309,8 @@
   .modal-overlay.show { display: flex; opacity: 1; }
   #modal-confirmar-guardar, #modal-password-accion, #modal-confirmar-eliminar { z-index: 3000; }
   #modal-foto-ampliada { z-index: 4000; background: rgba(0,0,0,0.85); }
+  /* El aviso SIEMPRE va por encima de cualquier modal (incluidas las contraseñas) */
+  #modal-aviso { z-index: 4500; }
 
   .filtros-registros {
     display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center;
@@ -362,9 +362,131 @@
     cursor: pointer; border: none; transition: all 0.2s ease;
   }
   .modal-btn-group button:active { transform: scale(0.96); }
-  .modal-btn-group button.cancel { background: #f5f5f7; color: var(--text); }
+  /* Todos los botones "cancel" de cualquier modal ahora son visibles (naranja) */
+  .modal-btn-group button.cancel {
+    background: #ff9500; color: #fff;
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.28);
+  }
+  .modal-btn-group button.cancel:hover { background: #f08a00; }
+  .modal-btn-group button.cancel:active { background: #e68500; }
   .modal-btn-group button.confirm-primary { background: var(--primary); color: white; }
   .modal-btn-group button.confirm-danger { background: var(--danger); color: white; }
+
+  /* ===== Botones con color visible ===== */
+  .modal-btn-group button.cancel-visible {
+    background: #ff9500; color: #fff;
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.28);
+  }
+  .modal-btn-group button.cancel-visible:active { background: #e68500; }
+  .modal-btn-group button.cancel-visible:hover { background: #f08a00; }
+
+  .modal-btn-group button.cancel-neutral {
+    background: #6e6e73; color: #fff;
+    box-shadow: 0 4px 12px rgba(110, 110, 115, 0.25);
+  }
+  .modal-btn-group button.cancel-neutral:active { background: #5c5c61; }
+  .modal-btn-group button.cancel-neutral:hover { background: #646469; }
+
+  /* Botón "Salida" del modal de reconocimiento: rojo visible */
+  .modal-btn-group button.rec-salida {
+    background: var(--danger); color: #fff;
+    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.28);
+  }
+  .modal-btn-group button.rec-salida:hover { background: #e0322a; }
+  .modal-btn-group button.rec-salida:active { background: #c92a22; }
+
+  /* ===== Toast dinámico ===== */
+  #toast-container {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 5000; display: flex; flex-direction: column; gap: 10px;
+    width: min(420px, calc(100vw - 32px));
+    /* CORRECCIÓN: no intercepta clics; los toasts son informativos y se cierran solos */
+    pointer-events: none;
+  }
+  .toast {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px; padding: 14px 18px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--primary);
+    font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.35;
+    animation: toastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* CORRECCIÓN: los toasts NO capturan el clic (evita tapar botones como Guardar) */
+    pointer-events: none;
+  }
+  .toast .toast-icon { font-size: 20px; flex-shrink: 0; }
+  .toast .toast-text { flex: 1; }
+  .toast.ok { border-left-color: var(--success); }
+  .toast.err { border-left-color: var(--danger); }
+  .toast.info { border-left-color: var(--primary); }
+  .toast.hide { animation: toastOut 0.3s ease forwards; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-16px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-12px) scale(0.96); } }
+
+  /* ===== Modal de reconocimiento ===== */
+  #modal-reconocimiento .modal-box {
+    max-width: 400px; border-top: 5px solid var(--success);
+    animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  #modal-reconocimiento .modal-icon { background: #e8f8ed; color: var(--success); }
+  #modal-reconocimiento .emp-rec-nombre { font-size: 22px; font-weight: 800; color: var(--text); margin: 4px 0 2px; }
+  #modal-reconocimiento .emp-rec-id { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+  #modal-reconocimiento .emp-rec-puesto { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 20px; }
+
+  /* ===== Formulario editar colaborador ===== */
+  #modal-editar-colaborador .edit-form { display: flex; flex-direction: column; gap: 4px; }
+  #modal-editar-colaborador .edit-field { display: flex; flex-direction: column; }
+  #modal-editar-colaborador .edit-field label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+  #modal-editar-colaborador .edit-field input {
+    width: 100%; max-width: none; margin-bottom: 0;
+    padding: 13px 16px; border-radius: 12px; font-size: 15px;
+  }
+  #modal-editar-colaborador .edit-actions-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px;
+  }
+  #modal-editar-colaborador .edit-actions-grid button {
+    width: 100%; padding: 13px 14px; border-radius: 12px; font-size: 14px;
+    font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease;
+  }
+  #modal-editar-colaborador .edit-actions-grid button:active { transform: scale(0.97); }
+  #modal-editar-colaborador .edit-actions-grid .btn-foto-cam { background: #eef3ff; color: var(--primary); border: 1px solid #dbe4ff; }
+  #modal-editar-colaborador .edit-actions-grid .btn-foto-cam:hover { background: #dbe7ff; }
+  #modal-editar-colaborador .edit-actions-grid .btn-del-foto { background: #fff0f0; color: var(--danger); border: 1px solid #ffd6d6; }
+  #modal-editar-colaborador .edit-actions-grid .btn-del-foto:hover { background: #ffd6d6; }
+  #modal-editar-colaborador .edit-file-input { width: 100%; max-width: none; margin: 6px 0 0; }
+  
+  @media (max-width: 480px) {
+    #modal-editar-colaborador .edit-actions-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Botones del footer Editar Colaborador (AJUSTE PLANOS) ===== */
+  #modal-editar-colaborador .modal-btn-group {
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  #modal-editar-colaborador .modal-btn-group button {
+    padding: 12px 14px; /* Reducción de altura */
+    font-size: 15px;   /* Un poco más compacto */
+    border-radius: 10px; /* Bordes un poco menos redondos */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Sombra más plana */
+  }
+  #modal-editar-colaborador .modal-btn-group button.cancel-visible,
+  #modal-editar-colaborador .modal-btn-group button.confirm-danger,
+  #modal-editar-colaborador .modal-btn-group button.confirm-primary {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Igualar la sombra sutil */
+  }
+  #modal-editar-colaborador .modal-btn-group button:active {
+    transform: scale(0.97);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Se aplasta aún más al hacer clic */
+  }
+
+  /* ===== Campo inválido: feedback visual ===== */
+  .campo-invalido {
+    border-color: var(--danger) !important;
+    background: #fff5f5 !important;
+    box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.12) !important;
+  }
 </style>
 </head>
 <body>
@@ -373,6 +495,9 @@
 <div id="intro-overlay">
   <img id="intro-logo" src="https://raw.githubusercontent.com/internalcontrolengineering/Desarrollos/main/LogoCI-G.png" alt="CI Logo">
 </div>
+
+<!-- Contenedor de toasts dinámicos -->
+<div id="toast-container"></div>
 
 <div class="container">
   <h1 style="text-align: center; font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 35px; color: #1d1d1f;">BioSync</h1>
@@ -396,7 +521,7 @@
         <video id="videoScanner" width="400" height="300" autoplay muted playsinline></video>
         <canvas id="overlayScanner" class="overlay" width="400" height="300"></canvas>
       </div>
-      <div id="status">Iniciando...</div>
+      <div id="status" style="display:none;"></div>
       
       <div id="user-info" style="font-size: 20px; margin-bottom: 15px; font-weight: 700; display: none; color: var(--success);"></div>
       
@@ -416,9 +541,10 @@
   <div id="tab-empleados" class="tab-content">
     <div class="card">
       <h2>Registrar Nuevo Colaborador</h2>
-      <div style="margin-bottom: 25px;">
-        <input type="text" id="inputNombre" placeholder="Nombre completo">
-        <input type="text" id="inputId" placeholder="Número de colaborador">
+      <div style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <input type="text" id="inputId" placeholder="Número de colaborador" style="max-width: 380px;">
+        <input type="text" id="inputNombre" placeholder="Nombre completo" style="max-width: 380px;">
+        <input type="text" id="inputPuesto" placeholder="Puesto" style="max-width: 380px;">
       </div>
       
       <div class="video-wrap">
@@ -449,7 +575,7 @@
       <h2 style="margin-bottom: 20px;">Base de Datos de Colaboradores</h2>
       <div style="overflow-x: auto;">
         <table id="tablaEmpleados">
-          <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Puesto</th><th>Acciones</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -527,19 +653,20 @@
       </button>
     </div>
     <div class="modal-btn-group">
-      <button class="cancel" onclick="cerrarModal('modal-password')">Cancelar</button>
-      <button class="confirm-primary" onclick="validarPasswordAdmin()">Ingresar</button>
+      <button type="button" class="cancel" onclick="cerrarModal('modal-password')">Cancelar</button>
+      <button type="button" class="confirm-primary" onclick="validarPasswordAdmin()">Ingresar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal: Configuraciones -->
+<!-- Modal: Configuraciones (mismo diseño que Editar Registro) -->
 <div id="modal-configuraciones" class="modal-overlay">
-  <div class="modal-box" style="text-align: left; max-width: 400px;">
-    <div class="modal-icon primary" style="margin: 0 auto 20px;">⚙️</div>
-    <h3 style="text-align: center; margin-bottom: 24px;">Configuraciones</h3>
+  <div class="modal-box" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-icon primary" style="margin: 0 auto 16px;">⚙️</div>
+    <h3 style="text-align: center; margin-bottom: 8px;">Configuraciones</h3>
+    <p style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Ajusta el tiempo mínimo de salida, las coordenadas de la oficina y el radio permitido.</p>
     
-    <div class="config-row">
+    <div class="config-row" style="margin-top: 0;">
       <span>Encender cámara al abrir</span>
       <label class="switch">
         <input type="checkbox" id="check-camara-auto">
@@ -603,9 +730,9 @@
       <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 0 0;">Por defecto: 100 metros</p>
     </div>
     
-    <div class="modal-btn-group" style="margin-top: 24px;">
-      <button class="cancel" onclick="cerrarModal('modal-configuraciones')">Cerrar</button>
-      <button class="confirm-primary" onclick="guardarConfiguraciones()">Guardar</button>
+    <div class="modal-btn-group" style="flex-wrap: wrap; margin-top: 24px;">
+      <button type="button" class="cancel-visible" onclick="cerrarModal('modal-configuraciones')" style="flex: 1;">Cerrar</button>
+      <button type="button" id="btn-guardar-config" class="confirm-primary" onclick="window.guardarConfiguraciones()" style="flex: 1;">Guardar</button>
     </div>
   </div>
 </div>
@@ -616,8 +743,8 @@
     <h3>Eliminar Colaborador</h3>
     <p>¿Estás seguro de que deseas eliminar a este colaborador? Esta acción no se puede deshacer.</p>
     <div class="modal-btn-group">
-      <button class="cancel" onclick="cerrarModal('modal-confirmar-eliminar')">Cancelar</button>
-      <button class="confirm-danger" id="btn-modal-eliminar">Eliminar</button>
+      <button type="button" class="cancel" onclick="cerrarModal('modal-confirmar-eliminar')">Cancelar</button>
+      <button type="button" class="confirm-danger" id="btn-modal-eliminar">Eliminar</button>
     </div>
   </div>
 </div>
@@ -635,8 +762,8 @@
       </button>
     </div>
     <div class="modal-btn-group">
-      <button class="cancel" onclick="cerrarModal('modal-password-accion')">Cancelar</button>
-      <button class="confirm-primary" id="btn-modal-password-accion">Aceptar</button>
+      <button type="button" class="cancel" onclick="cerrarModal('modal-password-accion')">Cancelar</button>
+      <button type="button" class="confirm-primary" id="btn-modal-password-accion">Aceptar</button>
     </div>
   </div>
 </div>
@@ -647,12 +774,27 @@
     <h3 id="modal-guardar-titulo">Confirmar Acción</h3>
     <p id="modal-guardar-mensaje">¿Deseas guardar los cambios?</p>
     <div class="modal-btn-group">
-      <button class="cancel" onclick="cerrarModal('modal-confirmar-guardar')">Cancelar</button>
-      <button class="confirm-primary" id="btn-modal-guardar">Sí, continuar</button>
+      <button type="button" class="cancel" onclick="cerrarModal('modal-confirmar-guardar')">Cancelar</button>
+      <button type="button" class="confirm-primary" id="btn-modal-guardar">Sí, continuar</button>
     </div>
   </div>
 </div>
 
+<!-- Modal: Reconocimiento facial (solo cuando hay acción pendiente) -->
+<div id="modal-reconocimiento" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon">✅</div>
+    <h3>Colaborador Reconocido</h3>
+    <div class="emp-rec-nombre" id="rec-nombre"></div>
+    <div class="emp-rec-id" id="rec-id"></div>
+    <div class="emp-rec-puesto" id="rec-puesto"></div>
+    <p style="margin-bottom: 18px;">Selecciona una acción para continuar.</p>
+    <div class="modal-btn-group">
+      <button type="button" class="confirm-primary" id="btn-rec-entrada" onclick="cerrarModal('modal-reconocimiento'); document.getElementById('btnEntrada').click();">Entrada</button>
+      <button type="button" class="rec-salida" id="btn-rec-salida" onclick="cerrarModal('modal-reconocimiento'); document.getElementById('btnSalida').click();">Salida</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Aviso personalizado -->
 <div id="modal-aviso" class="modal-overlay">
@@ -661,34 +803,46 @@
     <h3 id="aviso-titulo">Aviso</h3>
     <p id="aviso-mensaje"></p>
     <div class="modal-btn-group">
-      <button class="confirm-primary" onclick="cerrarModal('modal-aviso')">Entendido</button>
+      <button type="button" class="confirm-primary" onclick="cerrarModal('modal-aviso')">Entendido</button>
     </div>
   </div>
 </div>
 
-<!-- Modal: Editar Colaborador -->
+<!-- Modal: Editar Colaborador (mismo diseño que Editar Registro) -->
 <div id="modal-editar-colaborador" class="modal-overlay">
-  <div class="modal-box">
-    <div class="modal-icon primary">✏️</div>
-    <h3>Editar Colaborador</h3>
-    <p id="edit-emp-subtitulo" style="color:var(--text-muted); font-size:14px; margin-bottom:16px;"></p>
+  <div class="modal-box" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-icon primary" style="margin: 0 auto 16px;">✏️</div>
+    <h3 style="text-align: center; margin-bottom: 8px;">Editar Colaborador</h3>
+    <p id="edit-emp-subtitulo" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;"></p>
     <div class="emp-foto-preview" id="edit-emp-foto-preview"></div>
-    <label style="font-size:13px; font-weight:500; display:block; text-align:left;">Número de folio</label>
-    <input type="text" id="edit-emp-id" style="width:100%; max-width:none;">
-    <label style="font-size:13px; font-weight:500; display:block; text-align:left; margin-top:8px;">Nombre</label>
-    <input type="text" id="edit-emp-nombre" style="width:100%; max-width:none;">
-    <div class="modal-btn-group" style="margin-top:16px;">
-      <button class="action secondary" id="btn-emp-tomar-foto" style="flex:1;">📸 Tomar foto</button>
+    
+    <div class="edit-form">
+      <div class="edit-field">
+        <label for="edit-emp-id">Número de Empleado</label>
+        <input type="text" id="edit-emp-id">
+      </div>
+      <div class="edit-field" style="margin-top:10px;">
+        <label for="edit-emp-nombre">Nombre</label>
+        <input type="text" id="edit-emp-nombre">
+      </div>
+      <div class="edit-field" style="margin-top:10px;">
+        <label for="edit-emp-puesto">Puesto</label>
+        <input type="text" id="edit-emp-puesto">
+      </div>
+      
+      <div class="edit-actions-grid">
+        <button type="button" class="btn-foto-cam" id="btn-emp-tomar-foto">📸 Tomar foto</button>
+        <button type="button" class="btn-del-foto" id="btn-emp-eliminar-foto">Eliminar foto</button>
+      </div>
+      
+      <label style="font-size:13px; font-weight:600; color:var(--text-muted); display:block; text-align:left; margin-top:14px;">O cargar una foto</label>
+      <input type="file" id="edit-emp-foto" accept="image/*" class="edit-file-input">
     </div>
-    <label style="font-size:13px; font-weight:500; display:block; text-align:left; margin-top:8px;">O cargar una foto</label>
-    <input type="file" id="edit-emp-foto" accept="image/*">
-    <div class="modal-btn-group" style="margin-top:20px;">
-      <button class="cancel" id="btn-emp-eliminar-foto">Eliminar foto</button>
-      <button class="confirm-danger" id="btn-emp-eliminar">Eliminar registro</button>
-    </div>
+    
     <div class="modal-btn-group">
-      <button class="cancel" onclick="cerrarModal('modal-editar-colaborador')">Cancelar</button>
-      <button class="confirm-primary" id="btn-emp-guardar">Guardar cambios</button>
+      <button type="button" class="cancel-visible" onclick="cerrarModal('modal-editar-colaborador')" style="flex: 1;">Cancelar</button>
+      <button type="button" class="confirm-danger" id="btn-emp-eliminar" style="flex: 1;">Eliminar</button>
+      <button type="button" class="confirm-primary" id="btn-emp-guardar" style="flex: 1;">Guardar cambios</button>
     </div>
   </div>
 </div>
@@ -703,8 +857,8 @@
     </div>
     <canvas id="canvasEditEmp" style="display:none;"></canvas>
     <div class="modal-btn-group">
-      <button class="cancel" onclick="cerrarCapturaFotoEdicion()">Cancelar</button>
-      <button class="confirm-primary" id="btn-capturar-foto-edit">Capturar foto</button>
+      <button type="button" class="cancel" onclick="cerrarCapturaFotoEdicion()">Cancelar</button>
+      <button type="button" class="confirm-primary" id="btn-capturar-foto-edit">Capturar foto</button>
     </div>
   </div>
 </div>
@@ -755,9 +909,9 @@
     </div>
 
     <div class="modal-btn-group" style="flex-wrap: wrap;">
-      <button class="cancel" onclick="cerrarModal('modal-editar-registro')" style="flex: 1;">Cancelar</button>
-      <button class="confirm-danger" id="btn-eliminar-registro-dia" style="flex: 1;">Eliminar</button>
-      <button class="confirm-primary" id="btn-guardar-edicion-registro" style="flex: 1;">Guardar</button>
+      <button type="button" class="cancel-visible" onclick="cerrarModal('modal-editar-registro')" style="flex: 1;">Cancelar</button>
+      <button type="button" class="confirm-danger" id="btn-eliminar-registro-dia" style="flex: 1;">Eliminar</button>
+      <button type="button" class="confirm-primary" id="btn-guardar-edicion-registro" style="flex: 1;">Guardar</button>
     </div>
   </div>
 </div>
@@ -775,6 +929,10 @@
 (function () {
   "use strict";
 
+  // ===================================================================
+  // 1) DEFINICIONES TEMPRANAS (hoisted)
+  // ===================================================================
+
   const AVISO_ICONOS = { ok: "✅", error: "⚠️", info: "ℹ️" };
   function mostrarAviso(mensaje, tipo = "info", titulo = null) {
     const modal = document.getElementById("modal-aviso");
@@ -789,6 +947,166 @@
   }
   window.alert = function(mensaje) { mostrarAviso(mensaje); };
 
+  // ===== Sistema de toasts dinámicos =====
+  const toastContainer = document.getElementById("toast-container");
+  window.mostrarToast = function(mensaje, tipo = "info", duracion = 4000) {
+    const iconos = { ok: "✅", error: "❌", info: "ℹ️" };
+    const toast = document.createElement("div");
+    toast.className = "toast " + tipo;
+    toast.innerHTML = `<span class="toast-icon">${iconos[tipo] || iconos.info}</span><span class="toast-text">${mensaje}</span>`;
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add("hide");
+      setTimeout(() => toast.remove(), 300);
+    }, duracion);
+    return toast;
+  };
+
+  // ===================================================================
+  // 2) GUARDAR CONFIGURACIONES — reescrita de forma defensiva
+  // ===================================================================
+  function limpiarClaseInvalida(ids) {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove("campo-invalido");
+    });
+  }
+
+  function marcarInvalido(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("campo-invalido");
+  }
+
+  function primerCampoInvalido() {
+    return document.querySelector("#modal-configuraciones .campo-invalido");
+  }
+
+  function leerEntero(id) {
+    const el = document.getElementById(id);
+    if (!el) return NaN;
+    const raw = String(el.value ?? "").trim();
+    if (raw === "") return NaN;
+    const n = Number(raw);
+    return Number.isFinite(n) ? Math.trunc(n) : NaN;
+  }
+
+  function leerDecimal(id) {
+    const el = document.getElementById(id);
+    if (!el) return NaN;
+    const raw = String(el.value ?? "").trim();
+    if (raw === "") return NaN;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function guardarConfiguraciones() {
+    const idsCampos = [
+      "input-horas-minimas", "input-minutos-minimos", "input-radio-metros",
+      "input-oficina-lat", "input-oficina-lng"
+    ];
+    limpiarClaseInvalida(idsCampos);
+
+    try {
+      const horas   = leerEntero("input-horas-minimas");
+      const minutos = leerEntero("input-minutos-minimos");
+      const radio   = leerEntero("input-radio-metros");
+      const lat     = leerDecimal("input-oficina-lat");
+      const lng     = leerDecimal("input-oficina-lng");
+
+      const mostrarError = (mensaje) => {
+        window.mostrarToast(mensaje, "error", 5000);
+        const inv = primerCampoInvalido();
+        if (inv) { inv.scrollIntoView({ behavior: "smooth", block: "center" }); inv.focus(); }
+      };
+
+      if (Number.isNaN(horas) || horas < 0 || horas > 23) {
+        marcarInvalido("input-horas-minimas");
+        mostrarError("Las horas deben ser un número entre 0 y 23.");
+        return;
+      }
+      if (Number.isNaN(minutos) || minutos < 0 || minutos > 59) {
+        marcarInvalido("input-minutos-minimos");
+        mostrarError("Los minutos deben ser un número entre 0 y 59.");
+        return;
+      }
+      if (horas === 0 && minutos === 0) {
+        marcarInvalido("input-horas-minimas");
+        marcarInvalido("input-minutos-minimos");
+        mostrarError("Debes indicar al menos 1 minuto de tiempo mínimo.");
+        return;
+      }
+      if (Number.isNaN(radio) || radio < 10 || radio > 5000) {
+        marcarInvalido("input-radio-metros");
+        mostrarError("El radio permitido debe ser un número entre 10 y 5000 metros.");
+        return;
+      }
+      if (Number.isNaN(lat) || lat < -90 || lat > 90) {
+        marcarInvalido("input-oficina-lat");
+        mostrarError("La latitud debe ser un número entre -90 y 90.");
+        return;
+      }
+      if (Number.isNaN(lng) || lng < -180 || lng > 180) {
+        marcarInvalido("input-oficina-lng");
+        mostrarError("La longitud debe ser un número entre -180 y 180.");
+        return;
+      }
+
+      HORAS_REQUERIDAS = horas + (minutos / 60);
+      RADIO_METROS = radio;
+      OFICINA_LAT = lat;
+      OFICINA_LON = lng;
+      
+      // ===================================================================
+      // CORRECCIÓN QUOTA EXCEEDED (Edge): Escritura segura y limpieza previa
+      // ===================================================================
+      try {
+        localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
+        localStorage.setItem("radioMetros", radio);
+        localStorage.setItem("oficinaLat", lat);
+        localStorage.setItem("oficinaLon", lng);
+      } catch (storageErr) {
+        console.warn("LocalStorage lleno. Limpiando posibles residuos...", storageErr);
+        // Si falla por cuota, intentamos borrar basura residual (fotos viejas que se quedaron en versiones pasadas)
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith("foto_") || key.startsWith("temp_") || key.includes("base64"))) {
+            localStorage.removeItem(key);
+          }
+        }
+        // Reintentamos guardar
+        try {
+          localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
+          localStorage.setItem("radioMetros", radio);
+          localStorage.setItem("oficinaLat", lat);
+          localStorage.setItem("oficinaLon", lng);
+        } catch (retryErr) {
+          window.mostrarToast("El almacenamiento del navegador está lleno. Libera espacio borrando datos antiguos.", "error", 7000);
+        }
+      }
+
+      limpiarClaseInvalida(idsCampos);
+      cerrarModal('modal-configuraciones');
+      window.mostrarToast(`Configuración guardada · Tiempo mínimo: ${horas}h ${minutos}m · Radio: ${radio} m`, "ok", 4500);
+    } catch (err) {
+      window.mostrarToast("Error inesperado al guardar: " + (err && err.message ? err.message : err), "error", 6000);
+    }
+  }
+  window.guardarConfiguraciones = guardarConfiguraciones;
+
+  // ===== BINDING DURO ADICIONAL =====
+  window.addEventListener("load", () => {
+    const btnGuardarConfig = document.getElementById("btn-guardar-config");
+    if (btnGuardarConfig && !btnGuardarConfig._bioSyncBound) {
+      btnGuardarConfig.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (typeof window.guardarConfiguraciones === "function") {
+          window.guardarConfiguraciones();
+        }
+      });
+      btnGuardarConfig._bioSyncBound = true;
+    }
+  });
+
   const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
   const THRESHOLD = 0.55; 
   let OFICINA_LAT = parseFloat(localStorage.getItem("oficinaLat"));
@@ -797,9 +1115,8 @@
   if (isNaN(OFICINA_LON)) OFICINA_LON = -89.612914;
   const VALIDAR_UBICACION = true; 
   const PASSWORD_ADMIN = "ControlInterno2026";
-  const HORAS_SIN_REGISTRO = 8; // Si pasan más de 8h sin salida → "Sin registro"
+  const HORAS_SIN_REGISTRO = 8;
 
-  // Valores configurables (se cargan de localStorage)
   let HORAS_REQUERIDAS = parseFloat(localStorage.getItem("horasMinimas")) || 5;
   let RADIO_METROS = parseInt(localStorage.getItem("radioMetros")) || 100;
 
@@ -818,6 +1135,9 @@
   let tiempoSinReconocer = 0; 
   let ultimoFrameTime = Date.now();
   let botonMostrado = false;
+
+  let ultimaClaveAcciones = "";
+  let ultimaEvaluacionModal = 0;
   
   let streamGlobal = null;
   let db;
@@ -842,6 +1162,7 @@
   const btnConfirmarFoto = document.getElementById("btnConfirmarFoto");
   const inputNombre = document.getElementById("inputNombre");
   const inputId = document.getElementById("inputId");
+  const inputPuesto = document.getElementById("inputPuesto");
   
   const adminMenu = document.getElementById("admin-menu");
   const checkCamaraAuto = document.getElementById("check-camara-auto");
@@ -898,22 +1219,95 @@
     document.getElementById(id).classList.remove('show');
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      if (document.getElementById('modal-password').classList.contains('show')) {
-        e.preventDefault(); validarPasswordAdmin();
-      } else if (document.getElementById('modal-password-accion').classList.contains('show')) {
-        e.preventDefault(); document.getElementById('btn-modal-password-accion').click();
-      } else if (document.getElementById('modal-confirmar-guardar').classList.contains('show')) {
-        e.preventDefault(); document.getElementById('btn-modal-guardar').click();
-      } else if (document.getElementById('modal-confirmar-eliminar').classList.contains('show')) {
-        e.preventDefault(); document.getElementById('btn-modal-eliminar').click();
+  // ===================================================================
+  // 3) TECLA "INTRO" (Enter)
+  // ===================================================================
+  function obtenerModalSuperior() {
+    const modales = Array.from(document.querySelectorAll('.modal-overlay.show'));
+    if (modales.length === 0) return null;
+    modales.sort((a, b) => {
+      const za = parseInt(getComputedStyle(a).zIndex, 10) || 0;
+      const zb = parseInt(getComputedStyle(b).zIndex, 10) || 0;
+      return zb - za;
+    });
+    return modales[0];
+  }
+
+  function ejecutarAccionPrincipalModal(modal) {
+    if (!modal) return false;
+    switch (modal.id) {
+      case 'modal-password':
+        if (typeof validarPasswordAdmin === 'function') validarPasswordAdmin();
+        return true;
+      case 'modal-password-accion': {
+        const b = document.getElementById('btn-modal-password-accion');
+        if (b) b.click();
+        return true;
       }
+      case 'modal-confirmar-guardar': {
+        const b = document.getElementById('btn-modal-guardar');
+        if (b) b.click();
+        return true;
+      }
+      case 'modal-confirmar-eliminar': {
+        const b = document.getElementById('btn-modal-eliminar');
+        if (b) b.click();
+        return true;
+      }
+      case 'modal-aviso':
+        cerrarModal('modal-aviso');
+        return true;
+      case 'modal-configuraciones':
+        if (typeof window.guardarConfiguraciones === 'function') window.guardarConfiguraciones();
+        return true;
+      case 'modal-editar-colaborador': {
+        const b = document.getElementById('btn-emp-guardar');
+        if (b) b.click();
+        return true;
+      }
+      case 'modal-captura-foto': {
+        const b = document.getElementById('btn-capturar-foto-edit');
+        if (b) b.click();
+        return true;
+      }
+      case 'modal-editar-registro': {
+        const b = document.getElementById('btn-guardar-edicion-registro');
+        if (b) b.click();
+        return true;
+      }
+      case 'modal-reconocimiento': {
+        const bE = document.getElementById('btn-rec-entrada');
+        const bS = document.getElementById('btn-rec-salida');
+        if (bE && bE.style.display !== 'none') { bE.click(); return true; }
+        if (bS && bS.style.display !== 'none') { bS.click(); return true; }
+        cerrarModal('modal-reconocimiento');
+        return true;
+      }
+      case 'modal-foto-ampliada':
+        cerrarModal('modal-foto-ampliada');
+        return true;
+    }
+    return false;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const modal = obtenerModalSuperior();
+    if (!modal) return;
+    const activo = document.activeElement;
+    if (activo && activo.tagName === 'BUTTON' && modal.contains(activo)) return;
+    if (ejecutarAccionPrincipalModal(modal)) {
+      e.preventDefault();
     }
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.dataset.tab !== 'escaner') {
+        cerrarModal('modal-reconocimiento');
+        ultimaClaveAcciones = "";
+        ultimaEvaluacionModal = 0;
+      }
       if (document.getElementById('tab-empleados').classList.contains('active') && btn.dataset.tab !== 'empleados') {
         bloquearModulo();
       }
@@ -947,7 +1341,9 @@
     document.getElementById("tab-btn-empleados").style.display = "none";
     reiniciarFormulario();
     activarTabBiometrico();
-    statusEl.textContent = "Reactivando reconocimiento...";
+    ultimaClaveAcciones = "";
+    ultimaEvaluacionModal = 0;
+    mostrarToast("Reactivando reconocimiento...", "info", 2500);
 
     try {
       if (streamGlobal) {
@@ -958,11 +1354,9 @@
       videoRegistro.srcObject = null;
       limpiarRostroScanner();
       await encenderCamara(true);
-      statusEl.className = "ok";
-      statusEl.textContent = "✅ Colaborador guardado. Reconocimiento activo.";
+      mostrarToast("Colaborador guardado. Reconocimiento activo.", "ok", 3000);
     } catch (err) {
-      statusEl.className = "err";
-      statusEl.textContent = "No se pudo reactivar la cámara: " + (err.message || err);
+      mostrarToast("No se pudo reactivar la cámara: " + (err.message || err), "error", 5000);
     }
   }
 
@@ -995,18 +1389,19 @@
         checkCamaraAuto.checked = autoCam;
         const autoUbi = localStorage.getItem("autoUbicacion") !== "false";
         document.getElementById("check-ubicacion-auto").checked = autoUbi;
-        // Separar horas y minutos
         const totalMinutos = Math.round(HORAS_REQUERIDAS * 60);
         document.getElementById("input-horas-minimas").value = Math.floor(totalMinutos / 60);
         document.getElementById("input-minutos-minimos").value = totalMinutos % 60;
-        document.getElementById("input-radio-metros").value = RADIO_METROS;
-        document.getElementById("input-oficina-lat").value = OFICINA_LAT;
-        document.getElementById("input-oficina-lng").value = OFICINA_LON;
+        document.getElementById("input-radio-metros").value = RADIO_METROS || 100;
+        document.getElementById("input-oficina-lat").value = Number.isFinite(OFICINA_LAT) ? OFICINA_LAT : 20.971006;
+        document.getElementById("input-oficina-lng").value = Number.isFinite(OFICINA_LON) ? OFICINA_LON : -89.612914;
+        ["input-horas-minimas","input-minutos-minimos","input-radio-metros","input-oficina-lat","input-oficina-lng"]
+          .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove("campo-invalido"); });
         abrirModal('modal-configuraciones');
       }
       accionPendienteAdmin = null;
     } else {
-      alert("❌ Contraseña incorrecta.");
+      alert("Contraseña incorrecta.");
       input.value = "";
       input.focus();
     }
@@ -1026,39 +1421,11 @@
     }
   });
 
-  window.guardarConfiguraciones = function() {
-    let horas = parseInt(document.getElementById("input-horas-minimas").value) || 0;
-    let minutos = parseInt(document.getElementById("input-minutos-minimos").value) || 0;
-    const radio = parseInt(document.getElementById("input-radio-metros").value);
-
-    if (horas < 0 || horas > 23) return alert("Las horas deben ser entre 0 y 23.");
-    if (minutos < 0 || minutos > 59) return alert("Los minutos deben ser entre 0 y 59.");
-    if (horas === 0 && minutos === 0) return alert("Debes indicar al menos 1 minuto de tiempo mínimo.");
-    if (isNaN(radio) || radio < 10 || radio > 5000) return alert("El radio debe ser entre 10 y 5000 metros.");
-
-    const lat = parseFloat(document.getElementById("input-oficina-lat").value);
-    const lng = parseFloat(document.getElementById("input-oficina-lng").value);
-    if (isNaN(lat) || lat < -90 || lat > 90) return alert("La latitud debe estar entre -90 y 90.");
-    if (isNaN(lng) || lng < -180 || lng > 180) return alert("La longitud debe estar entre -180 y 180.");
-
-    HORAS_REQUERIDAS = horas + (minutos / 60);
-    RADIO_METROS = radio;
-    OFICINA_LAT = lat;
-    OFICINA_LON = lng;
-    localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
-    localStorage.setItem("radioMetros", radio);
-    localStorage.setItem("oficinaLat", lat);
-    localStorage.setItem("oficinaLon", lng);
-    cerrarModal('modal-configuraciones');
-    alert(`✅ Configuración guardada.\nTiempo mínimo: ${horas}h ${minutos}m\nRadio: ${radio} m\nUbicación: ${lat}, ${lng}`);
-  };
-
   function hoyISO() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // Convierte una fecha ISO (UTC) a la fecha local YYYY-MM-DD
   function fechaLocalISO(isoString) {
     const d = new Date(isoString);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1092,7 +1459,7 @@
   function guardarEmpleadoDB(emp) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("empleados", "readwrite");
-      const req = tx.objectStore("empleados").put({ name: emp.name, employeeId: emp.employeeId, descriptor: Array.from(emp.descriptor), foto: emp.foto });
+      const req = tx.objectStore("empleados").put({ name: emp.name, employeeId: emp.employeeId, puesto: emp.puesto || "", descriptor: Array.from(emp.descriptor), foto: emp.foto });
       req.onsuccess = () => resolve();
       req.onerror = () => reject("Error al guardar");
     });
@@ -1110,14 +1477,12 @@
   function guardarRegistroDB(reg) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("registros", "readwrite");
-      // No incluir "id" en el objeto: IndexedDB lo genera automáticamente (autoIncrement)
       const req = tx.objectStore("registros").add(reg);
       req.onsuccess = () => resolve();
       req.onerror = (e) => reject("Error al guardar registro: " + (e.target.error?.message || "clave duplicada"));
     });
   }
 
-  // ID del colaborador en un registro (compatible con datos antiguos que usaban "id")
   function getRegEmployeeId(r) {
     return r.employeeId != null ? r.employeeId : r.id;
   }
@@ -1132,7 +1497,7 @@
       regStore.getAll().onsuccess = e => { registros = e.target.result; };
       tx.oncomplete = () => {
         labeledDescriptors = empleados.map(e => ({
-          name: e.name, employeeId: e.employeeId, descriptor: new Float32Array(e.descriptor), foto: e.foto
+          name: e.name, employeeId: e.employeeId, puesto: e.puesto || "", descriptor: new Float32Array(e.descriptor), foto: e.foto
         }));
         renderTablaEmpleados();
         renderRegistrosDesdeArray(registros);
@@ -1146,7 +1511,7 @@
     const tbody = document.querySelector("#tablaEmpleados tbody");
     tbody.innerHTML = "";
     if (labeledDescriptors.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No hay colaboradores registrados</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay colaboradores registrados</td></tr>';
       return;
     }
     labeledDescriptors.forEach(emp => {
@@ -1155,6 +1520,7 @@
         <td>${emp.foto ? `<img src="${emp.foto}" class="foto-tabla">` : 'N/A'}</td>
         <td>${emp.employeeId}</td>
         <td>${emp.name}</td>
+        <td>${emp.puesto || '<span style="color:var(--text-muted);">—</span>'}</td>
         <td>
           <button class="btn-fila-icono" title="Editar o eliminar colaborador" aria-label="Editar o eliminar colaborador" onclick="editarEmpleado('${emp.employeeId}')">✏️</button>
         </td>
@@ -1255,7 +1621,6 @@
       return;
     }
 
-    // Agrupar por año → día → empleado
     const porAnio = {};
     registros.forEach(r => {
       const d = new Date(r.hora);
@@ -1278,7 +1643,6 @@
     aniosOrden.forEach((anio, idx) => {
       const card = document.createElement("div");
       card.className = "anio-card" + (idx === 0 ? " open" : "");
-      const totalDia = Object.keys(porAnio[anio]).length;
       const header = document.createElement("div");
       header.className = "anio-header";
       header.innerHTML = `<span>📅 Año ${anio}</span><span class="anio-chevron">▼</span>`;
@@ -1340,7 +1704,6 @@
               : '<span style="color:var(--text-muted);">Pendiente</span>';
           }
 
-          // Solo IDs de BD (sin fotos pesadas) para evitar fallos
           const payload = {
             name: emp.name,
             employeeId: emp.id,
@@ -1423,7 +1786,7 @@
     document.getElementById("btn-modal-password-accion").onclick = () => {
       const input = document.getElementById("input-password-accion");
       if (input.value !== PASSWORD_ADMIN) {
-        alert("❌ Contraseña incorrecta.");
+        alert("Contraseña incorrecta.");
         input.value = "";
         input.focus();
         return;
@@ -1438,7 +1801,7 @@
     document.getElementById("btn-modal-password-accion").onclick = () => {
       const input = document.getElementById("input-password-accion");
       if (input.value !== PASSWORD_ADMIN) {
-        alert("❌ Contraseña incorrecta.");
+        alert("Contraseña incorrecta.");
         input.value = "";
         input.focus();
         return;
@@ -1456,7 +1819,7 @@
             if (data.entradaDbId != null) await eliminarRegistroPorId(data.entradaDbId);
             if (data.salidaDbId != null) await eliminarRegistroPorId(data.salidaDbId);
             await renderTablaRegistros();
-            alert("✅ Registro eliminado.");
+            alert("Registro eliminado.");
           } catch (err) {
             alert("Error al eliminar: " + (err.message || err));
           }
@@ -1580,7 +1943,6 @@
 
   document.getElementById("btn-guardar-edicion-registro").addEventListener("click", () => {
     if (!registroEditando) return;
-    // Cerrar editor primero para que el modal de confirmación se vea bien
     cerrarModal("modal-editar-registro");
     setTimeout(() => {
       document.getElementById("modal-guardar-titulo").textContent = "Guardar cambios";
@@ -1622,7 +1984,6 @@
           registroEditando = null;
           await renderTablaRegistros();
 
-          // Cierra Registro de Asistencias y activa Biométrico de inmediato
           document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
           document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
           document.querySelector('.tab-btn[data-tab="escaner"]').classList.add("active");
@@ -1637,7 +1998,7 @@
             }
           }
 
-          alert("✅ Cambios guardados. Biométrico de Asistencia activado.");
+          mostrarToast("Cambios guardados. Biométrico de Asistencia activado.", "ok", 3500);
         } catch (err) {
           alert("Error al guardar: " + (err.message || err));
         }
@@ -1661,7 +2022,7 @@
           if (data.salida && data.salida.dbId != null) await eliminarRegistroPorId(data.salida.dbId);
           registroEditando = null;
           await renderTablaRegistros();
-          alert("✅ Registro eliminado.");
+          mostrarToast("Registro eliminado.", "ok", 3000);
         } catch (err) {
           alert("Error al eliminar: " + (err.message || err));
         }
@@ -1707,7 +2068,7 @@
     document.getElementById('btn-modal-password-accion').onclick = () => {
       const input = document.getElementById("input-password-accion");
       if (input.value !== PASSWORD_ADMIN) {
-        alert("❌ Contraseña incorrecta.");
+        alert("Contraseña incorrecta.");
         input.value = "";
         input.focus();
         return;
@@ -1725,9 +2086,10 @@
       fotoEliminadaColaborador = false;
 
       abrirModal('modal-editar-colaborador');
-      document.getElementById("edit-emp-subtitulo").textContent = `Editar foto y datos de ${emp.name}`;
+      document.getElementById("edit-emp-subtitulo").textContent = `Editando datos de ${emp.name}`;
       document.getElementById("edit-emp-id").value = emp.employeeId;
       document.getElementById("edit-emp-nombre").value = emp.name;
+      document.getElementById("edit-emp-puesto").value = emp.puesto || "";
       document.getElementById("edit-emp-foto").value = "";
       pintarFotoColaborador(emp.foto);
     };
@@ -1803,18 +2165,20 @@
 
     const nombre = document.getElementById("edit-emp-nombre").value.trim();
     const nuevoId = document.getElementById("edit-emp-id").value.trim();
+    const puesto = document.getElementById("edit-emp-puesto").value.trim();
     const idOriginal = empleadoEditando.employeeId;
 
     if (!nombre) return alert("El nombre no puede estar vacío.");
-    if (!nuevoId) return alert("El número de folio no puede estar vacío.");
+    if (!nuevoId) return alert("El número de empleado no puede estar vacío.");
     if (nuevoId !== idOriginal && labeledDescriptors.some(e => e.employeeId === nuevoId)) {
-      return alert("Ese número de folio ya existe.");
+      return alert("Ese número de empleado ya existe.");
     }
 
     const fotoFinal = fotoNuevaColaborador || (fotoEliminadaColaborador ? null : empleadoEditando.foto);
     const empActualizado = {
       name: nombre,
       employeeId: nuevoId,
+      puesto: puesto,
       descriptor: empleadoEditando.descriptor,
       foto: fotoFinal
     };
@@ -1830,7 +2194,13 @@
       empleadoEditando = null;
       fotoNuevaColaborador = null;
       fotoEliminadaColaborador = false;
-      alert("✅ Colaborador actualizado correctamente.", "ok");
+      
+      mostrarToast("Colaborador actualizado correctamente.", "ok", 2500);
+      
+      setTimeout(() => {
+        bloquearModulo();
+      }, 500);
+      
     } catch (err) {
       alert("Error al actualizar: " + (err.message || err), "error");
     }
@@ -1853,7 +2223,7 @@
         const input = document.getElementById("input-password-accion");
         const pass = input.value;
         if (pass !== PASSWORD_ADMIN) {
-          alert("❌ Contraseña incorrecta.");
+          alert("Contraseña incorrecta.");
           input.value = "";
           input.focus();
           return;
@@ -1866,6 +2236,69 @@
       };
     };
   };
+
+  // ===================================================================
+  // 4) EVALUACIÓN DE ACCIONES PARA LA TARJETA DE RECONOCIMIENTO
+  // ===================================================================
+  async function evaluarAccionesReconocimiento(emp) {
+    if (!db) return;
+    if (guardando) return;
+    if (!document.getElementById('tab-escaner').classList.contains('active')) {
+      const modalAbierto = document.getElementById('modal-reconocimiento').classList.contains('show');
+      if (modalAbierto) cerrarModal('modal-reconocimiento');
+      ultimaClaveAcciones = "";
+      return;
+    }
+
+    let registros;
+    try {
+      registros = await new Promise((res) => {
+        const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => res([]);
+      });
+    } catch (e) {
+      return;
+    }
+
+    const fecha = hoyISO();
+    const entrada = registros.find(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === emp.employeeId && esMismoDiaLocal(r.hora, fecha));
+    const salida  = registros.find(r => r.tipo === "SALIDA"  && getRegEmployeeId(r) === emp.employeeId && esMismoDiaLocal(r.hora, fecha));
+
+    let puedeEntrada = false;
+    let puedeSalida = false;
+    if (!entrada) {
+      puedeEntrada = true;
+    } else if (!salida) {
+      const diffHoras = (Date.now() - new Date(entrada.hora).getTime()) / 3600000;
+      if (diffHoras >= HORAS_REQUERIDAS) puedeSalida = true;
+    }
+
+    const hayAccion = puedeEntrada || puedeSalida;
+    const modalAbierto = document.getElementById('modal-reconocimiento').classList.contains('show');
+
+    if (!hayAccion) {
+      ultimaClaveAcciones = "";
+      if (modalAbierto) cerrarModal('modal-reconocimiento');
+      return;
+    }
+
+    const clave = `${emp.employeeId}|${puedeEntrada ? 1 : 0}|${puedeSalida ? 1 : 0}`;
+
+    document.getElementById("rec-nombre").textContent = emp.name;
+    document.getElementById("rec-id").textContent = `#${emp.employeeId}`;
+    document.getElementById("rec-puesto").textContent = emp.puesto || "";
+
+    const btnRecEntrada = document.getElementById("btn-rec-entrada");
+    const btnRecSalida = document.getElementById("btn-rec-salida");
+    btnRecEntrada.style.display = puedeEntrada ? "" : "none";
+    btnRecSalida.style.display = puedeSalida ? "" : "none";
+
+    if (!modalAbierto && clave !== ultimaClaveAcciones) {
+      ultimaClaveAcciones = clave;
+      abrirModal('modal-reconocimiento');
+    }
+  }
 
   // ===== FLUJO DE CÁMARA Y RECONOCIMIENTO =====
   
@@ -1880,8 +2313,6 @@
 
     try {
       bloqueoCamara.style.display = "none";
-      statusEl.className = "";
-      statusEl.textContent = "Encendiendo cámara...";
       primerCuadroListo = false;
       bucleActivo = false;
       
@@ -1916,8 +2347,7 @@
       statusRegistro.className = "ok";
       statusRegistro.textContent = "Cámara lista. Toma la primera foto.";
       
-      statusEl.className = "ok";
-      statusEl.textContent = "Acérquese a la cámara para registrar su asistencia.";
+      mostrarToast("Acérquese a la cámara para registrar su asistencia.", "info", 3000);
       
       setTimeout(() => {
         primerCuadroListo = true;
@@ -1926,10 +2356,9 @@
 
     } catch (e) {
       console.error("Error cámara:", e);
-      statusEl.className = "err";
-      statusEl.textContent = "Error de cámara: " + e.message;
       statusRegistro.className = "err";
       statusRegistro.textContent = "Error de cámara: " + e.message;
+      mostrarToast("Error de cámara: " + e.message, "error", 5000);
       
       if (!forzar && localStorage.getItem("autoCamara") !== "false") {
         bloqueoCamara.style.display = "block";
@@ -1939,7 +2368,6 @@
 
   async function init() {
     try {
-      statusEl.textContent = "Cargando modelos de IA...";
       await initDB();
       await cargarTodoDB();
 
@@ -1952,12 +2380,8 @@
         setTimeout(() => {
           encenderCamara(true);
         }, 600);
-      } else {
-        statusEl.className = "";
-        statusEl.textContent = "Cámara apagada por configuración.";
       }
 
-      // Solicitar permiso de ubicación de forma anticipada si está activado
       const autoUbi = localStorage.getItem("autoUbicacion") !== "false";
       if (autoUbi) {
         setTimeout(() => solicitarPermisoUbicacion(), 1200);
@@ -1965,8 +2389,7 @@
       
     } catch (e) {
       console.error("Error init:", e);
-      statusEl.className = "err";
-      statusEl.textContent = "Error: " + e.message;
+      mostrarToast("Error: " + e.message, "error", 5000);
     }
   }
 
@@ -1985,9 +2408,23 @@
         const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 });
         const detections = await faceapi.detectAllFaces(videoScanner, options).withFaceLandmarks();
 
+        if (videoScanner.videoWidth > 0 && videoScanner.videoHeight > 0) {
+          if (overlayScanner.width !== videoScanner.videoWidth || overlayScanner.height !== videoScanner.videoHeight) {
+            overlayScanner.width = videoScanner.videoWidth;
+            overlayScanner.height = videoScanner.videoHeight;
+          }
+        }
+
         const ctx = overlayScanner.getContext("2d");
         ctx.clearRect(0, 0, overlayScanner.width, overlayScanner.height);
-        faceapi.draw.drawDetections(overlayScanner, detections);
+        
+        if (detections.length > 0) {
+          const resized = faceapi.resizeResults(detections, { 
+            width: overlayScanner.width, 
+            height: overlayScanner.height 
+          });
+          faceapi.draw.drawDetections(overlayScanner, resized);
+        }
 
         let rostroReconocido = false;
 
@@ -2003,17 +2440,24 @@
               tiempoSinReconocer = 0;
               
               const emp = labeledDescriptors.find(e => e.name === match.label);
-              if (!rostroActual || rostroActual.employeeId !== emp.employeeId) {
+              const cambioEmpleado = !rostroActual || rostroActual.employeeId !== emp.employeeId;
+
+              if (cambioEmpleado) {
                 rostroActual = emp;
                 videoScanner.style.borderColor = "var(--success)";
                 userInfo.style.display = "block";
                 userInfo.textContent = `✅ ${emp.name} (#${emp.employeeId})`;
-                statusEl.className = "ok";
-                statusEl.textContent = "Colaborador reconocido. Selecciona una acción.";
                 accionesAsistencia.style.display = "flex";
+                ultimaClaveAcciones = "";
+                ultimaEvaluacionModal = 0;
               }
               btnEntrada.disabled = false;
               btnSalida.disabled = false;
+
+              if (ahora - ultimaEvaluacionModal > 2500) {
+                ultimaEvaluacionModal = ahora;
+                evaluarAccionesReconocimiento(emp);
+              }
             }
           }
         }
@@ -2024,8 +2468,7 @@
           if (tiempoSinReconocer > 5000 && !botonMostrado) {
             botonMostrado = true;
             avisoRostro.style.display = "block";
-            statusEl.textContent = "No se reconoce el rostro.";
-            statusEl.className = "err";
+            mostrarToast("No se reconoce el rostro. ¿Deseas agregar al colaborador?", "error", 5000);
           }
         } else if (detections.length === 0) {
           limpiarRostroScanner();
@@ -2045,13 +2488,16 @@
   function limpiarRostroScanner() {
     if (rostroActual) {
       rostroActual = null;
+      ultimaClaveAcciones = "";
+      ultimaEvaluacionModal = 0;
+      if (document.getElementById('modal-reconocimiento').classList.contains('show')) {
+        cerrarModal('modal-reconocimiento');
+      }
       videoScanner.style.borderColor = "transparent";
       userInfo.style.display = "none";
       accionesAsistencia.style.display = "none";
       btnEntrada.disabled = true;
       btnSalida.disabled = true;
-      statusEl.className = "";
-      statusEl.textContent = "Acérquese a la cámara para registrar su asistencia.";
     }
   }
 
@@ -2059,8 +2505,9 @@
     if (!listo) return;
     const nombre = inputNombre.value.trim();
     const id = inputId.value.trim();
+    const puesto = inputPuesto.value.trim();
     
-    if (!nombre || !id) return alert("Llena el nombre y número de empleado.");
+    if (!id || !nombre || !puesto) return alert("Llena el número de empleado, nombre y puesto.");
     if (!idEmpleadoEditando && labeledDescriptors.some(e => e.employeeId === id)) return alert("Ese ID ya existe.");
 
     btnTomarFoto.disabled = true;
@@ -2149,6 +2596,7 @@
       cerrarModal('modal-confirmar-guardar');
       const nombre = inputNombre.value.trim();
       const id = inputId.value.trim();
+      const puesto = inputPuesto.value.trim();
 
       btnConfirmarFoto.disabled = true;
       btnConfirmarFoto.textContent = "⏳ Guardando...";
@@ -2159,7 +2607,7 @@
           descriptorPromedio[i] = (descriptores[0][i] + descriptores[1][i] + descriptores[2][i]) / 3;
         }
 
-        const nuevoEmp = { name: nombre, employeeId: id, descriptor: descriptorPromedio, foto: fotos[fotoSeleccionada] };
+        const nuevoEmp = { name: nombre, employeeId: id, puesto: puesto, descriptor: descriptorPromedio, foto: fotos[fotoSeleccionada] };
         await guardarEmpleadoDB(nuevoEmp);
         await cargarTodoDB();
         reiniciarFormulario();
@@ -2169,11 +2617,9 @@
         idEmpleadoEditando = null;
         botonMostrado = false;
 
-        // Cerrar automáticamente el módulo de registro y volver a Biométrico de Asistencia
         setTimeout(() => {
           bloquearModulo();
-          statusEl.className = "ok";
-          statusEl.textContent = "✅ Colaborador guardado. Listo para registrar asistencia.";
+          mostrarToast("Colaborador guardado. Listo para registrar asistencia.", "ok", 3000);
         }, 800);
 
       } catch (error) {
@@ -2205,13 +2651,13 @@
     panelSeleccion.style.display = "none";
     inputNombre.value = "";
     inputId.value = "";
+    inputPuesto.value = "";
     inputId.disabled = false;
     statusRegistro.className = "";
     statusRegistro.textContent = "Cámara lista. Toma la primera foto.";
   }
 
   function solicitarPermisoUbicacion() {
-    // Solicita el permiso una sola vez (sin validar distancia) para que el navegador lo recuerde.
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       () => {},
@@ -2248,7 +2694,8 @@
         reject(msg);
       };
 
-      // Usamos watchPosition para obtener varias lecturas y quedarnos con la de mejor precisión
+      const toastGPS = mostrarToast("Obteniendo ubicación GPS de alta precisión...", "info", 6000);
+
       watchId = navigator.geolocation.watchPosition(
         (p) => {
           const accuracy = p.coords.accuracy || 999;
@@ -2260,32 +2707,38 @@
 
           if (!mejorLectura || accuracy < mejorLectura.precision) {
             mejorLectura = lectura;
-            statusEl.textContent = `Mejorando precisión GPS... (±${Math.round(accuracy)} m)`;
+            if (toastGPS && toastGPS.querySelector(".toast-text")) {
+              toastGPS.querySelector(".toast-text").textContent = `Mejorando precisión GPS... (±${Math.round(accuracy)} m)`;
+            }
           }
 
-          // Si ya tenemos una precisión aceptable (< 50 m) terminamos rápido
           if (accuracy <= 50) {
+            if (toastGPS) toastGPS.remove();
             finalizar(mejorLectura);
           }
         },
         (e) => {
           navigator.geolocation.getCurrentPosition(
             (p) => {
+              if (toastGPS) toastGPS.remove();
               finalizar({
                 lat: p.coords.latitude,
                 lng: p.coords.longitude,
                 precision: p.coords.accuracy || 999
               });
             },
-            () => fallar("Error de GPS: " + e.message),
+            () => {
+              if (toastGPS) toastGPS.remove();
+              fallar("Error de GPS: " + e.message);
+            },
             options
           );
         },
         options
       );
 
-      // Tiempo máximo reducido a 6 segundos para registros más rápidos
       setTimeout(() => {
+        if (toastGPS) toastGPS.remove();
         if (mejorLectura) {
           finalizar(mejorLectura);
         } else {
@@ -2296,7 +2749,6 @@
   }
 
   async function validarUbicacion() {
-    statusEl.textContent = "Obteniendo ubicación GPS de alta precisión...";
     let ubicacion = await obtenerUbicacion();
     
     if (VALIDAR_UBICACION) {
@@ -2324,6 +2776,8 @@
 
   btnEntrada.addEventListener("click", async () => {
     if (!rostroActual) return alert("No hay rostro reconocido.");
+    cerrarModal("modal-reconocimiento");
+    ultimaClaveAcciones = "";
     guardando = true;
     const empTemp = { ...rostroActual };
 
@@ -2340,24 +2794,24 @@
       const yaEntro = registros.some(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
       if (yaEntro) throw new Error("Ya registraste entrada hoy.");
 
-      // Usar employeeId (no "id") para no chocar con el keyPath autoIncrement de IndexedDB
       const nuevoReg = { tipo: "ENTRADA", employeeId: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
       await guardarRegistroDB(nuevoReg);
       await renderTablaRegistros();
       
-      statusEl.className = "ok";
-      statusEl.textContent = `✅ Entrada registrada para ${empTemp.name}`;
+      mostrarToast(`Entrada registrada para ${empTemp.name}`, "ok", 4000);
     } catch (e) {
-      statusEl.className = "err";
-      statusEl.textContent = "❌ " + (e.message || e);
+      mostrarToast(e.message || String(e), "error", 5000);
     } finally {
       guardando = false;
+      ultimaClaveAcciones = "";
       setTimeout(() => { if(rostroActual) btnEntrada.disabled = false; }, 3000);
     }
   });
 
   btnSalida.addEventListener("click", async () => {
     if (!rostroActual) return alert("No hay rostro reconocido.");
+    cerrarModal("modal-reconocimiento");
+    ultimaClaveAcciones = "";
     guardando = true;
     const empTemp = { ...rostroActual };
 
@@ -2394,13 +2848,12 @@
       await guardarRegistroDB(nuevoReg);
       await renderTablaRegistros();
       
-      statusEl.className = "ok";
-      statusEl.textContent = `✅ Salida registrada para ${empTemp.name}`;
+      mostrarToast(`Salida registrada para ${empTemp.name}`, "ok", 4000);
     } catch (e) {
-      statusEl.className = "err";
-      statusEl.textContent = "❌ " + (e.message || e);
+      mostrarToast(e.message || String(e), "error", 5000);
     } finally {
       guardando = false;
+      ultimaClaveAcciones = "";
       setTimeout(() => { if(rostroActual) btnSalida.disabled = false; }, 3000);
     }
   });
