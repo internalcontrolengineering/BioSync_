@@ -76,7 +76,57 @@
   }
   .btn-cancel-tab:hover { background: #ffecec; border-color: #ffcccc; }
 
+
+  /* --- Mejoras UI --- */
+  #modal-configuraciones .modal-box,
+  #modal-editar-colaborador .modal-box {
+    width: min(420px, calc(100vw - 32px));
+    max-height: min(640px, 86vh);
+    overflow-y: auto; overscroll-behavior: contain; padding-right: 6px;
+  }
+  #modal-configuraciones .modal-box::-webkit-scrollbar,
+  #modal-editar-colaborador .modal-box::-webkit-scrollbar { width: 8px; }
+  #modal-configuraciones .modal-box::-webkit-scrollbar-thumb,
+  #modal-editar-colaborador .modal-box::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
+  .btn-fila-icono {
+    width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid #dbe4ff; background: #eef3ff; color: var(--primary);
+    border-radius: 12px; cursor: pointer; font-size: 17px; line-height: 1; transition: all .15s ease;
+  }
+  .btn-fila-icono:hover { background: #dbe7ff; transform: translateY(-1px); }
+  .filtros-registros select { min-width: 150px; }
+  input[type="file"] {
+    display: inline-block; width: 100%; max-width: 260px; padding: 12px 16px;
+    border: 1px dashed #c7d2fe; background: #f5f8ff; color: var(--primary);
+    border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  input[type="file"]::file-selector-button {
+    margin-right: 12px; border: none; background: var(--primary); color: #fff;
+    padding: 9px 14px; border-radius: 9px; font-weight: 600; cursor: pointer;
+  }
+  .video-wrap { width: min(420px, 100%); aspect-ratio: 4 / 3; display: block; }
+  .video-wrap video, .video-wrap canvas.overlay { width: 100%; height: 100%; object-fit: cover; }
+  @media (max-width: 700px) {
+    .video-wrap { width: 100%; border-radius: 16px; }
+    .modal-box { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; }
+    .modal-btn-group { flex-direction: column; }
+    .modal-btn-group button { width: 100%; }
+  }
+  #modal-aviso .modal-box { max-width: 380px; text-align: center; border-top: 5px solid var(--primary); }
+  #modal-aviso.aviso-ok .modal-box { border-top-color: var(--success); }
+  #modal-aviso.aviso-error .modal-box { border-top-color: var(--danger); }
+  #modal-aviso .modal-icon { font-size: 34px; }
+  #modal-aviso h3 { margin: 8px 0 10px; }
+  #modal-aviso p { color: var(--text-muted); line-height: 1.5; margin-bottom: 22px; white-space: pre-line; }
+  #modal-editar-colaborador .modal-box { text-align: left; }
+  .emp-foto-preview { display: flex; justify-content: center; margin: 4px 0 18px; }
+  .emp-foto-preview img {
+    width: 120px; height: 120px; object-fit: cover; border-radius: 20px;
+    border: 3px solid #e5e7eb; box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  }
+
   /* Videos */
+
   .video-wrap { 
     position: relative; display: inline-block; margin: 0 auto 20px; 
     border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); background: #000;
@@ -357,7 +407,7 @@
 
       <div id="aviso-rostro">
         <p>¿Deseas agregar al colaborador?</p>
-        <button class="action registro" onclick="abrirMenuAdmin()">Ir a Registro de Colaborador</button>
+        <button class="action registro" onclick="pedirPass('registro')">Ir a Registro de Colaborador</button>
       </div>
     </div>
   </div>
@@ -365,7 +415,6 @@
   <!-- REGISTRO DE COLABORADOR -->
   <div id="tab-empleados" class="tab-content">
     <div class="card">
-      <button class="btn-cancel-tab" onclick="bloquearModulo()">Bloquear y Salir</button>
       <h2>Registrar Nuevo Colaborador</h2>
       <div style="margin-bottom: 25px;">
         <input type="text" id="inputNombre" placeholder="Nombre completo">
@@ -530,6 +579,23 @@
       <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 0 0;">Por defecto: 5 horas 0 minutos. Puedes poner solo horas, solo minutos, o ambos.</p>
     </div>
 
+    <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 12px;">
+      <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 10px;">Coordenadas de la oficina</label>
+      <div style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+          <input type="number" id="input-oficina-lat" step="any"
+                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
+          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Latitud</p>
+        </div>
+        <div style="flex: 1;">
+          <input type="number" id="input-oficina-lng" step="any"
+                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
+          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Longitud</p>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 0 0;">Se usan para validar que estés dentro del radio permitido.</p>
+    </div>
+
     <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 8px;">
       <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 8px;">Radio permitido (metros)</label>
       <input type="number" id="input-radio-metros" min="10" max="5000" step="10" value="100" 
@@ -583,6 +649,62 @@
     <div class="modal-btn-group">
       <button class="cancel" onclick="cerrarModal('modal-confirmar-guardar')">Cancelar</button>
       <button class="confirm-primary" id="btn-modal-guardar">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal: Aviso personalizado -->
+<div id="modal-aviso" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon primary" id="aviso-icono">ℹ️</div>
+    <h3 id="aviso-titulo">Aviso</h3>
+    <p id="aviso-mensaje"></p>
+    <div class="modal-btn-group">
+      <button class="confirm-primary" onclick="cerrarModal('modal-aviso')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Colaborador -->
+<div id="modal-editar-colaborador" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon primary">✏️</div>
+    <h3>Editar Colaborador</h3>
+    <p id="edit-emp-subtitulo" style="color:var(--text-muted); font-size:14px; margin-bottom:16px;"></p>
+    <div class="emp-foto-preview" id="edit-emp-foto-preview"></div>
+    <label style="font-size:13px; font-weight:500; display:block; text-align:left;">Número de folio</label>
+    <input type="text" id="edit-emp-id" style="width:100%; max-width:none;">
+    <label style="font-size:13px; font-weight:500; display:block; text-align:left; margin-top:8px;">Nombre</label>
+    <input type="text" id="edit-emp-nombre" style="width:100%; max-width:none;">
+    <div class="modal-btn-group" style="margin-top:16px;">
+      <button class="action secondary" id="btn-emp-tomar-foto" style="flex:1;">📸 Tomar foto</button>
+    </div>
+    <label style="font-size:13px; font-weight:500; display:block; text-align:left; margin-top:8px;">O cargar una foto</label>
+    <input type="file" id="edit-emp-foto" accept="image/*">
+    <div class="modal-btn-group" style="margin-top:20px;">
+      <button class="cancel" id="btn-emp-eliminar-foto">Eliminar foto</button>
+      <button class="confirm-danger" id="btn-emp-eliminar">Eliminar registro</button>
+    </div>
+    <div class="modal-btn-group">
+      <button class="cancel" onclick="cerrarModal('modal-editar-colaborador')">Cancelar</button>
+      <button class="confirm-primary" id="btn-emp-guardar">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Capturar foto para edición -->
+<div id="modal-captura-foto" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon primary">📸</div>
+    <h3>Tomar foto</h3>
+    <div class="video-wrap">
+      <video id="videoEditEmp" autoplay muted playsinline></video>
+    </div>
+    <canvas id="canvasEditEmp" style="display:none;"></canvas>
+    <div class="modal-btn-group">
+      <button class="cancel" onclick="cerrarCapturaFotoEdicion()">Cancelar</button>
+      <button class="confirm-primary" id="btn-capturar-foto-edit">Capturar foto</button>
     </div>
   </div>
 </div>
@@ -653,10 +775,26 @@
 (function () {
   "use strict";
 
+  const AVISO_ICONOS = { ok: "✅", error: "⚠️", info: "ℹ️" };
+  function mostrarAviso(mensaje, tipo = "info", titulo = null) {
+    const modal = document.getElementById("modal-aviso");
+    const texto = String(mensaje ?? "").replace(/[✅❌⚠️]/g, "").trim();
+    document.getElementById("aviso-mensaje").textContent = texto;
+    document.getElementById("aviso-titulo").textContent = titulo || (tipo === "ok" ? "Listo" : tipo === "error" ? "Atención" : "Aviso");
+    document.getElementById("aviso-icono").textContent = AVISO_ICONOS[tipo] || AVISO_ICONOS.info;
+    modal.classList.remove("aviso-ok", "aviso-error");
+    if (tipo === "ok") modal.classList.add("aviso-ok");
+    if (tipo === "error") modal.classList.add("aviso-error");
+    abrirModal("modal-aviso");
+  }
+  window.alert = function(mensaje) { mostrarAviso(mensaje); };
+
   const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
   const THRESHOLD = 0.55; 
-  const OFICINA_LAT = 20.971006; 
-  const OFICINA_LON = -89.612914;
+  let OFICINA_LAT = parseFloat(localStorage.getItem("oficinaLat"));
+  if (isNaN(OFICINA_LAT)) OFICINA_LAT = 20.971006;
+  let OFICINA_LON = parseFloat(localStorage.getItem("oficinaLon"));
+  if (isNaN(OFICINA_LON)) OFICINA_LON = -89.612914;
   const VALIDAR_UBICACION = true; 
   const PASSWORD_ADMIN = "ControlInterno2026";
   const HORAS_SIN_REGISTRO = 8; // Si pasan más de 8h sin salida → "Sin registro"
@@ -751,7 +889,10 @@
   function abrirModal(id) {
     document.getElementById(id).classList.add('show');
     const input = document.getElementById(id).querySelector('input');
-    if (input) { input.value = ""; setTimeout(() => input.focus(), 100); }
+    if (input && input.type === "password") {
+      input.value = "";
+      setTimeout(() => input.focus(), 100);
+    }
   }
   window.cerrarModal = function(id) {
     document.getElementById(id).classList.remove('show');
@@ -802,14 +943,26 @@
     });
   });
 
-  window.bloquearModulo = function() {
+  window.bloquearModulo = async function() {
     document.getElementById("tab-btn-empleados").style.display = "none";
     reiniciarFormulario();
-    document.querySelector('[data-tab="escaner"]').click();
-    statusEl.textContent = "Módulo bloqueado.";
-    if (videoRegistro.srcObject) {
-       videoRegistro.srcObject = null;
-       if (streamGlobal) videoScanner.srcObject = streamGlobal;
+    activarTabBiometrico();
+    statusEl.textContent = "Reactivando reconocimiento...";
+
+    try {
+      if (streamGlobal) {
+        streamGlobal.getTracks().forEach(track => track.stop());
+        streamGlobal = null;
+      }
+      videoScanner.srcObject = null;
+      videoRegistro.srcObject = null;
+      limpiarRostroScanner();
+      await encenderCamara(true);
+      statusEl.className = "ok";
+      statusEl.textContent = "✅ Colaborador guardado. Reconocimiento activo.";
+    } catch (err) {
+      statusEl.className = "err";
+      statusEl.textContent = "No se pudo reactivar la cámara: " + (err.message || err);
     }
   }
 
@@ -847,6 +1000,8 @@
         document.getElementById("input-horas-minimas").value = Math.floor(totalMinutos / 60);
         document.getElementById("input-minutos-minimos").value = totalMinutos % 60;
         document.getElementById("input-radio-metros").value = RADIO_METROS;
+        document.getElementById("input-oficina-lat").value = OFICINA_LAT;
+        document.getElementById("input-oficina-lng").value = OFICINA_LON;
         abrirModal('modal-configuraciones');
       }
       accionPendienteAdmin = null;
@@ -881,13 +1036,21 @@
     if (horas === 0 && minutos === 0) return alert("Debes indicar al menos 1 minuto de tiempo mínimo.");
     if (isNaN(radio) || radio < 10 || radio > 5000) return alert("El radio debe ser entre 10 y 5000 metros.");
 
-    // Guardamos como decimal de horas (ej: 5h 30m = 5.5)
+    const lat = parseFloat(document.getElementById("input-oficina-lat").value);
+    const lng = parseFloat(document.getElementById("input-oficina-lng").value);
+    if (isNaN(lat) || lat < -90 || lat > 90) return alert("La latitud debe estar entre -90 y 90.");
+    if (isNaN(lng) || lng < -180 || lng > 180) return alert("La longitud debe estar entre -180 y 180.");
+
     HORAS_REQUERIDAS = horas + (minutos / 60);
     RADIO_METROS = radio;
+    OFICINA_LAT = lat;
+    OFICINA_LON = lng;
     localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
     localStorage.setItem("radioMetros", radio);
+    localStorage.setItem("oficinaLat", lat);
+    localStorage.setItem("oficinaLon", lng);
     cerrarModal('modal-configuraciones');
-    alert(`✅ Configuración guardada.\nTiempo mínimo: ${horas}h ${minutos}m\nRadio: ${radio} m`);
+    alert(`✅ Configuración guardada.\nTiempo mínimo: ${horas}h ${minutos}m\nRadio: ${radio} m\nUbicación: ${lat}, ${lng}`);
   };
 
   function hoyISO() {
@@ -993,8 +1156,7 @@
         <td>${emp.employeeId}</td>
         <td>${emp.name}</td>
         <td>
-          <button class="action secondary" style="padding: 8px 14px; font-size: 13px; margin-right: 5px;" onclick="editarEmpleado('${emp.employeeId}')">Editar</button>
-          <button class="action btn-vaciar" style="padding: 8px 14px; font-size: 13px;" onclick="solicitarEliminarEmpleado('${emp.employeeId}')">Eliminar</button>
+          <button class="btn-fila-icono" title="Editar o eliminar colaborador" aria-label="Editar o eliminar colaborador" onclick="editarEmpleado('${emp.employeeId}')">✏️</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -1018,35 +1180,52 @@
   }
 
   function actualizarFiltrosAnio() {
-    const select = document.getElementById("filtro-anio");
-    if (!select) return;
-    const anioActual = select.value || "todos";
+    const selectAnio = document.getElementById("filtro-anio");
+    const selectMes = document.getElementById("filtro-mes");
+    if (!selectAnio || !selectMes) return;
+    const anioActual = selectAnio.value || "todos";
+    const mesActual = selectMes.value || "todos";
     const anios = new Set();
+    const mesesPorAnio = {};
     cacheRegistrosCompletos.forEach(r => {
-      if (r.hora) anios.add(new Date(r.hora).getFullYear());
+      if (!r.hora) return;
+      const d = new Date(r.hora);
+      if (isNaN(d.getTime())) return;
+      const anio = d.getFullYear();
+      anios.add(anio);
+      if (!mesesPorAnio[anio]) mesesPorAnio[anio] = new Set();
+      mesesPorAnio[anio].add(d.getMonth());
     });
-    const lista = Array.from(anios).sort((a, b) => b - a);
-    select.innerHTML = '<option value="todos">Todos</option>' +
-      lista.map(a => `<option value="${a}">${a}</option>`).join("");
-    if ([...select.options].some(o => o.value === anioActual)) select.value = anioActual;
+    const listaAnios = Array.from(anios).sort((a, b) => b - a);
+    selectAnio.innerHTML = '<option value="todos">Todos</option>' +
+      listaAnios.map(a => `<option value="${a}">${a}</option>`).join("");
+    if ([...selectAnio.options].some(o => o.value === anioActual)) selectAnio.value = anioActual;
+    const anioSeleccionado = selectAnio.value;
+    const meses = anioSeleccionado === "todos"
+      ? new Set(cacheRegistrosCompletos.filter(r => r.hora && !isNaN(new Date(r.hora).getTime())).map(r => new Date(r.hora).getMonth()))
+      : (mesesPorAnio[anioSeleccionado] || new Set());
+    const nombresMeses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const listaMeses = Array.from(meses).sort((a, b) => a - b);
+    selectMes.innerHTML = '<option value="todos">Todos</option>' +
+      listaMeses.map(m => `<option value="${m}">${nombresMeses[m]}</option>`).join("");
+    if ([...selectMes.options].some(o => o.value === mesActual)) selectMes.value = mesActual;
+    else selectMes.value = "todos";
   }
 
   function aplicarFiltrosYRender() {
     const anio = document.getElementById("filtro-anio")?.value || "todos";
     const mes = document.getElementById("filtro-mes")?.value || "todos";
     let regs = cacheRegistrosCompletos.slice();
-    if (anio !== "todos") {
-      regs = regs.filter(r => new Date(r.hora).getFullYear() === parseInt(anio));
-    }
-    if (mes !== "todos") {
-      regs = regs.filter(r => new Date(r.hora).getMonth() === parseInt(mes));
-    }
-    // más recientes primero
+    if (anio !== "todos") regs = regs.filter(r => new Date(r.hora).getFullYear() === parseInt(anio));
+    if (mes !== "todos") regs = regs.filter(r => new Date(r.hora).getMonth() === parseInt(mes));
     regs.sort((a, b) => new Date(b.hora) - new Date(a.hora));
     renderRegistrosDesdeArray(regs);
   }
 
-  document.getElementById("filtro-anio")?.addEventListener("change", aplicarFiltrosYRender);
+  document.getElementById("filtro-anio")?.addEventListener("change", () => {
+    actualizarFiltrosAnio();
+    aplicarFiltrosYRender();
+  });
   document.getElementById("filtro-mes")?.addEventListener("change", aplicarFiltrosYRender);
 
   function formatUbicacion(ubicacion) {
@@ -1166,7 +1345,9 @@
             name: emp.name,
             employeeId: emp.id,
             entradaDbId: emp.entrada ? emp.entrada.id : null,
-            salidaDbId: emp.salida ? emp.salida.id : null
+            salidaDbId: emp.salida ? emp.salida.id : null,
+            entrada: emp.entrada ? { hora: emp.entrada.hora, ubicacion: emp.entrada.ubicacion || null, foto: emp.entrada.foto || null } : null,
+            salida: emp.salida ? { hora: emp.salida.hora, ubicacion: emp.salida.ubicacion || null, foto: emp.salida.foto || null } : null
           };
           const payloadStr = encodeURIComponent(JSON.stringify(payload));
 
@@ -1179,8 +1360,7 @@
             <td>${fotoE}</td>
             <td>${fotoS}</td>
             <td style="white-space:nowrap;">
-              <button class="btn-fila btn-fila-editar">Editar</button>
-              <button class="btn-fila btn-fila-eliminar">Eliminar</button>
+              <button class="btn-fila-icono" title="Editar o eliminar registro" aria-label="Editar o eliminar registro">✏️</button>
             </td>`;
 
           let lastTap = 0;
@@ -1190,13 +1370,9 @@
             if (now - lastTap < 350) solicitarEditarRegistro(payloadStr);
             lastTap = now;
           });
-          tr.querySelector(".btn-fila-editar").addEventListener("click", (e) => {
+          tr.querySelector(".btn-fila-icono").addEventListener("click", (e) => {
             e.stopPropagation();
             solicitarEditarRegistro(payloadStr);
-          });
-          tr.querySelector(".btn-fila-eliminar").addEventListener("click", (e) => {
-            e.stopPropagation();
-            solicitarEliminarRegistroDia(payloadStr);
           });
 
           tbody.appendChild(tr);
@@ -1298,8 +1474,12 @@
       return;
     }
 
-    const entradaFull = data.entradaDbId != null ? obtenerRegistroPorDbId(data.entradaDbId) : null;
-    const salidaFull = data.salidaDbId != null ? obtenerRegistroPorDbId(data.salidaDbId) : null;
+    const entradaFull = data.entradaDbId != null
+      ? (obtenerRegistroPorDbId(data.entradaDbId) || (data.entrada ? { ...data.entrada, id: data.entradaDbId } : null))
+      : null;
+    const salidaFull = data.salidaDbId != null
+      ? (obtenerRegistroPorDbId(data.salidaDbId) || (data.salida ? { ...data.salida, id: data.salidaDbId } : null))
+      : null;
 
     registroEditando = {
       name: data.name,
@@ -1334,7 +1514,8 @@
 
     if (registroEditando.entrada) {
       bloqueE.style.display = "block";
-      const h = isoToDatetimeLocal(registroEditando.entrada.hora);
+      const h = isoToDatetimeLocal(registroEditando.entrada.hora)
+        || String(registroEditando.entrada.hora || "").slice(0, 16);
       document.getElementById("edit-entrada-hora").value = h;
       document.getElementById("edit-entrada-lat").value = registroEditando.entrada.ubicacion ? registroEditando.entrada.ubicacion.lat : "";
       document.getElementById("edit-entrada-lng").value = registroEditando.entrada.ubicacion ? registroEditando.entrada.ubicacion.lng : "";
@@ -1366,14 +1547,28 @@
     }
 
     abrirModal("modal-editar-registro");
+
+    requestAnimationFrame(() => {
+      if (registroEditando?.entrada) {
+        const horaEntrada = isoToDatetimeLocal(registroEditando.entrada.hora)
+          || String(registroEditando.entrada.hora || "").slice(0, 16);
+        document.getElementById("edit-entrada-hora").value = horaEntrada;
+      }
+    });
   }
 
+  document.getElementById("edit-entrada-foto").addEventListener("click", function() {
+    this.value = "";
+  });
   document.getElementById("edit-entrada-foto").addEventListener("change", async (e) => {
     fotoEntradaNueva = await leerFotoArchivo(e.target);
     if (fotoEntradaNueva) {
       document.getElementById("edit-entrada-foto-preview").innerHTML =
         `<img src="${fotoEntradaNueva}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`;
     }
+  });
+  document.getElementById("edit-salida-foto").addEventListener("click", function() {
+    this.value = "";
   });
   document.getElementById("edit-salida-foto").addEventListener("change", async (e) => {
     fotoSalidaNueva = await leerFotoArchivo(e.target);
@@ -1426,7 +1621,23 @@
           }
           registroEditando = null;
           await renderTablaRegistros();
-          alert("✅ Cambios guardados.");
+
+          // Cierra Registro de Asistencias y activa Biométrico de inmediato
+          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+          document.querySelector('.tab-btn[data-tab="escaner"]').classList.add("active");
+          document.getElementById("tab-escaner").classList.add("active");
+
+          if (streamGlobal) {
+            videoScanner.srcObject = streamGlobal;
+            videoRegistro.srcObject = null;
+            if (!bucleActivo && listo) {
+              primerCuadroListo = true;
+              iniciarEscaneo();
+            }
+          }
+
+          alert("✅ Cambios guardados. Biométrico de Asistencia activado.");
         } catch (err) {
           alert("Error al guardar: " + (err.message || err));
         }
@@ -1458,6 +1669,16 @@
     }, 250);
   });
 
+  function activarTabBiometrico() {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === "escaner");
+    });
+    document.querySelectorAll(".tab-content").forEach(content => {
+      content.classList.toggle("active", content.id === "tab-escaner");
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function actualizarRegistroDB(reg) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("registros", "readwrite");
@@ -1476,40 +1697,152 @@
     });
   }
 
+  let empleadoEditando = null;
+  let fotoNuevaColaborador = null;
+  let fotoEliminadaColaborador = false;
+  let streamEditEmp = null;
+
   window.editarEmpleado = function(id) {
     abrirModal('modal-password-accion');
     document.getElementById('btn-modal-password-accion').onclick = () => {
       const input = document.getElementById("input-password-accion");
-      const pass = input.value;
-      if (pass !== PASSWORD_ADMIN) {
+      if (input.value !== PASSWORD_ADMIN) {
         alert("❌ Contraseña incorrecta.");
         input.value = "";
         input.focus();
         return;
       }
       cerrarModal('modal-password-accion');
-      const emp = labeledDescriptors.find(e => e.employeeId === id);
-      if (!emp) return;
 
-      idEmpleadoEditando = id;
-      inputNombre.value = emp.name;
-      inputId.value = emp.employeeId;
-      inputId.disabled = true; 
-      btnTomarFoto.disabled = true; 
-      statusRegistro.className = "";
-      statusRegistro.textContent = "Editando colaborador. Toma 3 fotos nuevas.";
-      
-      fotos = [null, null, null];
-      descriptores = [null, null, null];
-      fotoSeleccionada = -1;
-      for (let i = 1; i <= 3; i++) {
-        const el = document.getElementById('step' + i);
-        el.className = 'capture-step';
-        el.innerHTML = `${i}`;
+      const emp = labeledDescriptors.find(e => e.employeeId === id);
+      if (!emp) {
+        alert("No se encontró el colaborador.");
+        return;
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      empleadoEditando = emp;
+      fotoNuevaColaborador = null;
+      fotoEliminadaColaborador = false;
+
+      abrirModal('modal-editar-colaborador');
+      document.getElementById("edit-emp-subtitulo").textContent = `Editar foto y datos de ${emp.name}`;
+      document.getElementById("edit-emp-id").value = emp.employeeId;
+      document.getElementById("edit-emp-nombre").value = emp.name;
+      document.getElementById("edit-emp-foto").value = "";
+      pintarFotoColaborador(emp.foto);
     };
   };
+
+  function pintarFotoColaborador(foto) {
+    document.getElementById("edit-emp-foto-preview").innerHTML = foto
+      ? `<img src="${foto}" alt="Foto del colaborador" onclick="ampliarFoto(this.src)" style="cursor:zoom-in;">`
+      : '<span style="color:var(--text-muted); font-size:14px;">Sin foto</span>';
+  }
+
+  document.getElementById("edit-emp-foto").addEventListener("click", function() {
+    this.value = "";
+  });
+
+  document.getElementById("edit-emp-foto").addEventListener("change", async (e) => {
+    fotoNuevaColaborador = await leerFotoArchivo(e.target);
+    if (fotoNuevaColaborador) {
+      fotoEliminadaColaborador = false;
+      pintarFotoColaborador(fotoNuevaColaborador);
+    }
+  });
+
+  document.getElementById("btn-emp-eliminar-foto").addEventListener("click", () => {
+    if (!empleadoEditando) return;
+    fotoNuevaColaborador = null;
+    fotoEliminadaColaborador = true;
+    document.getElementById("edit-emp-foto").value = "";
+    pintarFotoColaborador(null);
+  });
+
+  window.abrirCapturaFotoEdicion = async function() {
+    try {
+      streamEditEmp = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+      });
+      document.getElementById("videoEditEmp").srcObject = streamEditEmp;
+      abrirModal('modal-captura-foto');
+    } catch (err) {
+      alert("No se pudo acceder a la cámara: " + (err.message || err), "error");
+    }
+  };
+
+  window.cerrarCapturaFotoEdicion = function() {
+    if (streamEditEmp) {
+      streamEditEmp.getTracks().forEach(track => track.stop());
+      streamEditEmp = null;
+    }
+    document.getElementById("videoEditEmp").srcObject = null;
+    cerrarModal('modal-captura-foto');
+  };
+
+  document.getElementById("btn-emp-tomar-foto").addEventListener("click", abrirCapturaFotoEdicion);
+
+  document.getElementById("btn-capturar-foto-edit").addEventListener("click", () => {
+    const video = document.getElementById("videoEditEmp");
+    const canvas = document.getElementById("canvasEditEmp");
+    if (!video.videoWidth) {
+      alert("La cámara aún no está lista. Espera un momento e intenta de nuevo.", "error");
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    fotoNuevaColaborador = canvas.toDataURL("image/jpeg", 0.9);
+    fotoEliminadaColaborador = false;
+    pintarFotoColaborador(fotoNuevaColaborador);
+    cerrarCapturaFotoEdicion();
+  });
+
+  document.getElementById("btn-emp-guardar").addEventListener("click", async () => {
+    if (!empleadoEditando) return;
+
+    const nombre = document.getElementById("edit-emp-nombre").value.trim();
+    const nuevoId = document.getElementById("edit-emp-id").value.trim();
+    const idOriginal = empleadoEditando.employeeId;
+
+    if (!nombre) return alert("El nombre no puede estar vacío.");
+    if (!nuevoId) return alert("El número de folio no puede estar vacío.");
+    if (nuevoId !== idOriginal && labeledDescriptors.some(e => e.employeeId === nuevoId)) {
+      return alert("Ese número de folio ya existe.");
+    }
+
+    const fotoFinal = fotoNuevaColaborador || (fotoEliminadaColaborador ? null : empleadoEditando.foto);
+    const empActualizado = {
+      name: nombre,
+      employeeId: nuevoId,
+      descriptor: empleadoEditando.descriptor,
+      foto: fotoFinal
+    };
+
+    try {
+      if (nuevoId !== idOriginal) {
+        await eliminarEmpleadoDB(idOriginal);
+      }
+      await guardarEmpleadoDB(empActualizado);
+      await cargarTodoDB();
+
+      cerrarModal('modal-editar-colaborador');
+      empleadoEditando = null;
+      fotoNuevaColaborador = null;
+      fotoEliminadaColaborador = false;
+      alert("✅ Colaborador actualizado correctamente.", "ok");
+    } catch (err) {
+      alert("Error al actualizar: " + (err.message || err), "error");
+    }
+  });
+
+  document.getElementById("btn-emp-eliminar").addEventListener("click", () => {
+    if (!empleadoEditando) return;
+    const id = empleadoEditando.employeeId;
+    cerrarModal('modal-editar-colaborador');
+    empleadoEditando = null;
+    solicitarEliminarEmpleado(id);
+  });
 
   window.solicitarEliminarEmpleado = function(id) {
     abrirModal('modal-confirmar-eliminar');
@@ -1559,8 +1892,8 @@
 
       streamGlobal = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          width: { ideal: 400 }, 
-          height: { ideal: 300 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
           facingMode: "user"
         } 
       });
