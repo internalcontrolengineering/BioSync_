@@ -71,6 +71,23 @@
   #intro-overlay.zoom-out #intro-logo { transform: scale(8); opacity: 0; }
   #intro-overlay.hide { opacity: 0; pointer-events: none; }
 
+  /* ===== NUEVO: contenedor de foto superior configurable ===== */
+  #header-logo-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 0 20px 0;
+    min-height: 0;
+  }
+  #header-logo-wrap img {
+    display: block;
+    object-fit: contain;
+    border-radius: 16px;
+    filter: drop-shadow(0 4px 12px rgba(163, 177, 198, 0.35));
+  }
+  #header-logo-wrap.hidden { display: none; }
+  /* ========================================================== */
+
   h1 {
     text-align: center;
     font-size: clamp(30px, 5vw, 42px);
@@ -843,6 +860,12 @@
 <div id="toast-container"></div>
 
 <div class="container">
+  <!-- NUEVO: Foto configurable arriba de BioSync -->
+  <div id="header-logo-wrap" class="hidden">
+    <img id="header-logo" src="" alt="Logo superior">
+  </div>
+  <!-- ================================================== -->
+
   <h1>BioSync</h1>
 
   <div class="tabs">
@@ -995,6 +1018,31 @@
       <label class="switch"><input type="checkbox" id="check-ubicacion-auto"><span class="slider"></span></label>
     </div>
     <p style="font-size: 12.5px; color: #8a8a96; margin: 10px 0 18px 0; text-align: center;">Solicita el permiso de ubicación una sola vez al abrir la app.</p>
+
+    <!-- NUEVO: bloque de configuración de la foto superior -->
+    <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Foto superior (arriba de BioSync)</label>
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <img id="config-header-logo-preview" src="" alt="Vista previa" style="display: none; object-fit: contain; border-radius: 12px; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 4px 4px 12px rgba(163, 177, 198, 0.4); max-width: 100%;">
+        <span id="config-header-logo-empty" style="color: #8a8a96; font-size: 13px; font-weight: 700;">Sin imagen configurada</span>
+      </div>
+      <input type="file" id="config-header-logo-file" accept="image/*" style="max-width: 100%; margin-bottom: 12px;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="flex: 1;">
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; text-transform: uppercase; font-weight: 800;">Ancho (px)</label>
+          <input type="number" id="config-header-logo-width" min="20" max="800" step="1" value="120" style="width: 100%; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 14px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+        </div>
+        <div style="flex: 1;">
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; text-transform: uppercase; font-weight: 800;">Alto (px)</label>
+          <input type="number" id="config-header-logo-height" min="20" max="800" step="1" value="120" style="width: 100%; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 14px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <button type="button" id="btn-config-header-logo-quitar" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.9); background: linear-gradient(145deg, #fff0f0, #fde0e0); color: var(--danger); font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 4px 4px 10px rgba(255, 59, 48, 0.18), -4px -4px 10px rgba(255, 255, 255, 0.9);">Quitar imagen</button>
+      </div>
+      <p style="font-size: 12px; color: #8a8a96; margin: 10px 0 0 0; text-align: center;">La imagen se mostrará centrada arriba de "BioSync".</p>
+    </div>
+    <!-- ================================================== -->
 
     <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
       <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Tiempo mínimo para salida</label>
@@ -1333,6 +1381,47 @@
     return Number.isFinite(n) ? n : NaN;
   }
 
+  // ===== NUEVO: variables para la foto superior configurable =====
+  let HEADER_LOGO_SRC = null;
+  let HEADER_LOGO_WIDTH = 120;
+  let HEADER_LOGO_HEIGHT = 120;
+  let headerLogoNueva = null;      // foto recién cargada en el modal (aún no guardada)
+  let headerLogoEliminada = false; // bandera de eliminación desde el modal
+
+  function aplicarHeaderLogo() {
+    const wrap = document.getElementById("header-logo-wrap");
+    const img = document.getElementById("header-logo");
+    if (!wrap || !img) return;
+    if (HEADER_LOGO_SRC) {
+      img.src = HEADER_LOGO_SRC;
+      img.style.width = HEADER_LOGO_WIDTH + "px";
+      img.style.height = HEADER_LOGO_HEIGHT + "px";
+      wrap.classList.remove("hidden");
+    } else {
+      img.removeAttribute("src");
+      wrap.classList.add("hidden");
+    }
+  }
+
+  function pintarPreviewHeaderLogoEnModal() {
+    const preview = document.getElementById("config-header-logo-preview");
+    const empty = document.getElementById("config-header-logo-empty");
+    if (!preview || !empty) return;
+    const src = headerLogoNueva || (headerLogoEliminada ? null : HEADER_LOGO_SRC);
+    if (src) {
+      preview.src = src;
+      preview.style.width = HEADER_LOGO_WIDTH + "px";
+      preview.style.height = HEADER_LOGO_HEIGHT + "px";
+      preview.style.display = "block";
+      empty.style.display = "none";
+    } else {
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      empty.style.display = "inline";
+    }
+  }
+  // ==============================================================
+
   function guardarConfiguraciones() {
     const idsCampos = ["input-horas-minimas", "input-minutos-minimos", "input-radio-metros", "input-oficina-lat", "input-oficina-lng"];
     limpiarClaseInvalida(idsCampos);
@@ -1357,21 +1446,57 @@
       if (Number.isNaN(lat) || lat < -90 || lat > 90) { marcarInvalido("input-oficina-lat"); mostrarError("La latitud debe ser un número entre -90 y 90."); return; }
       if (Number.isNaN(lng) || lng < -180 || lng > 180) { marcarInvalido("input-oficina-lng"); mostrarError("La longitud debe ser un número entre -180 y 180."); return; }
 
+      // NUEVO: validar dimensiones de la foto superior
+      const headerW = leerEntero("config-header-logo-width");
+      const headerH = leerEntero("config-header-logo-height");
+      if (Number.isNaN(headerW) || headerW < 20 || headerW > 800) { marcarInvalido("config-header-logo-width"); mostrarError("El ancho de la foto superior debe ser entre 20 y 800 px."); return; }
+      if (Number.isNaN(headerH) || headerH < 20 || headerH > 800) { marcarInvalido("config-header-logo-height"); mostrarError("El alto de la foto superior debe ser entre 20 y 800 px."); return; }
+
       HORAS_REQUERIDAS = horas + (minutos / 60);
       RADIO_METROS = radio;
       OFICINA_LAT = lat;
       OFICINA_LON = lng;
+
+      // NUEVO: aplicar cambios locales de la foto superior
+      if (headerLogoNueva) {
+        HEADER_LOGO_SRC = headerLogoNueva;
+      } else if (headerLogoEliminada) {
+        HEADER_LOGO_SRC = null;
+      }
+      HEADER_LOGO_WIDTH = headerW;
+      HEADER_LOGO_HEIGHT = headerH;
+      headerLogoNueva = null;
+      headerLogoEliminada = false;
+      aplicarHeaderLogo();
 
       const autoCam = !!document.getElementById("check-camara-auto")?.checked;
       const autoUbi = !!document.getElementById("check-ubicacion-auto")?.checked;
 
       (async () => {
         try {
-          const { error } = await sb.from("configuraciones").upsert({
+          const row = {
             id: 1, auto_camara: autoCam, auto_ubicacion: autoUbi, horas_minimas: HORAS_REQUERIDAS,
             radio_metros: radio, oficina_lat: lat, oficina_lon: lng, updated_at: new Date().toISOString()
-          }, { onConflict: "id" });
-          if (error) throw error;
+          };
+          // NUEVO: guardar también la foto superior y sus dimensiones
+          row.header_logo = HEADER_LOGO_SRC || null;
+          row.header_logo_width = HEADER_LOGO_WIDTH;
+          row.header_logo_height = HEADER_LOGO_HEIGHT;
+
+          const { error } = await sb.from("configuraciones").upsert(row, { onConflict: "id" });
+          if (error) {
+            // Si el error es por columnas nuevas inexistentes, reintentamos sin ellas para no romper la app
+            const msg = String(error.message || "").toLowerCase();
+            if (msg.includes("column") || msg.includes("header_logo") || msg.includes("schema")) {
+              console.warn("Columnas header_logo no existen en Supabase. Guardando sin foto superior. Error:", error);
+              const { header_logo, header_logo_width, header_logo_height, ...rowSinLogo } = row;
+              const { error: err2 } = await sb.from("configuraciones").upsert(rowSinLogo, { onConflict: "id" });
+              if (err2) throw err2;
+              window.mostrarToast("Configuración guardada (nota: agrega columnas header_logo, header_logo_width y header_logo_height en Supabase para persistir la foto).", "info", 7000);
+            } else {
+              throw error;
+            }
+          }
           limpiarClaseInvalida(idsCampos);
           cerrarModal('modal-configuraciones');
           window.mostrarToast(`Configuración guardada · Tiempo mínimo: ${horas}h ${minutos}m · Radio: ${radio} m`, "ok", 4500);
@@ -1395,6 +1520,61 @@
         if (typeof window.guardarConfiguraciones === "function") window.guardarConfiguraciones();
       });
       btnGuardarConfig._bioSyncBound = true;
+    }
+
+    // NUEVO: listeners de la foto superior
+    const inputHeader = document.getElementById("config-header-logo-file");
+    if (inputHeader && !inputHeader._bioSyncBound) {
+      inputHeader.addEventListener("click", function () { this.value = ""; });
+      inputHeader.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          headerLogoNueva = reader.result;
+          headerLogoEliminada = false;
+          pintarPreviewHeaderLogoEnModal();
+        };
+        reader.readAsDataURL(file);
+      });
+      inputHeader._bioSyncBound = true;
+    }
+
+    const btnQuitarHeader = document.getElementById("btn-config-header-logo-quitar");
+    if (btnQuitarHeader && !btnQuitarHeader._bioSyncBound) {
+      btnQuitarHeader.addEventListener("click", () => {
+        headerLogoNueva = null;
+        headerLogoEliminada = true;
+        const inp = document.getElementById("config-header-logo-file");
+        if (inp) inp.value = "";
+        pintarPreviewHeaderLogoEnModal();
+      });
+      btnQuitarHeader._bioSyncBound = true;
+    }
+
+    const inpW = document.getElementById("config-header-logo-width");
+    const inpH = document.getElementById("config-header-logo-height");
+    if (inpW && !inpW._bioSyncBound) {
+      inpW.addEventListener("input", () => {
+        const v = parseInt(inpW.value, 10);
+        if (Number.isFinite(v) && v >= 20 && v <= 800) {
+          HEADER_LOGO_WIDTH = v;
+          pintarPreviewHeaderLogoEnModal();
+          aplicarHeaderLogo();
+        }
+      });
+      inpW._bioSyncBound = true;
+    }
+    if (inpH && !inpH._bioSyncBound) {
+      inpH.addEventListener("input", () => {
+        const v = parseInt(inpH.value, 10);
+        if (Number.isFinite(v) && v >= 20 && v <= 800) {
+          HEADER_LOGO_HEIGHT = v;
+          pintarPreviewHeaderLogoEnModal();
+          aplicarHeaderLogo();
+        }
+      });
+      inpH._bioSyncBound = true;
     }
   });
 
@@ -1626,6 +1806,16 @@
         document.getElementById("input-oficina-lng").value = Number.isFinite(OFICINA_LON) ? OFICINA_LON : -89.612914;
         ["input-horas-minimas","input-minutos-minimos","input-radio-metros","input-oficina-lat","input-oficina-lng"]
           .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove("campo-invalido"); });
+
+        // NUEVO: precargar la foto superior y sus dimensiones en el modal de configuración
+        headerLogoNueva = null;
+        headerLogoEliminada = false;
+        document.getElementById("config-header-logo-file").value = "";
+        document.getElementById("config-header-logo-width").value = HEADER_LOGO_WIDTH || 120;
+        document.getElementById("config-header-logo-height").value = HEADER_LOGO_HEIGHT || 120;
+        ["config-header-logo-width","config-header-logo-height"].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove("campo-invalido"); });
+        pintarPreviewHeaderLogoEnModal();
+
         abrirModal('modal-configuraciones');
       }
       accionPendienteAdmin = null;
@@ -1678,6 +1868,14 @@
         if (!Number.isFinite(OFICINA_LON)) OFICINA_LON = -89.612914;
         AUTO_CAMARA = data.auto_camara !== false;
         AUTO_UBICACION = data.auto_ubicacion !== false;
+
+        // NUEVO: cargar la foto superior y sus dimensiones si existen
+        if (data.header_logo) HEADER_LOGO_SRC = data.header_logo;
+        const w = parseInt(data.header_logo_width, 10);
+        const h = parseInt(data.header_logo_height, 10);
+        if (Number.isFinite(w) && w >= 20 && w <= 800) HEADER_LOGO_WIDTH = w;
+        if (Number.isFinite(h) && h >= 20 && h <= 800) HEADER_LOGO_HEIGHT = h;
+        aplicarHeaderLogo();
       }
     } catch (e) {
       console.warn("No se pudo cargar configuraciones (usando defaults):", e);
