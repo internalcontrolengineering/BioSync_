@@ -5,10 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BioSync</title>
 <style>
-  /* ============================================================
-     BIOSYNC · CLAYMORPHISM 2026
-     ============================================================ */
-
   :root {
     --primary: #0071e3;
     --primary-hover: #0077ed;
@@ -58,20 +54,38 @@
 
   .container { max-width: 900px; margin: 0 auto; }
 
+  /* ===== INTRO ===== */
   #intro-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     background: #000; display: flex; align-items: center; justify-content: center;
     z-index: 9999; overflow: hidden; transition: opacity 0.8s var(--ease-out);
+    flex-direction: column; gap: 8px;
+    opacity: 1;
+    visibility: visible;
   }
+  #intro-overlay.hide { opacity: 0; pointer-events: none; }
+
   #intro-logo {
     width: 200px; height: auto; object-fit: contain;
     transform: scale(1);
     transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s var(--ease-out);
+    display: none;
+  }
+  #intro-text {
+    display: none;
+    color: #ffffff;
+    font-size: clamp(32px, 7vw, 56px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-align: center;
+    padding: 0 20px;
+    transform: scale(1);
+    transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s var(--ease-out);
   }
   #intro-overlay.zoom-out #intro-logo { transform: scale(8); opacity: 0; }
-  #intro-overlay.hide { opacity: 0; pointer-events: none; }
+  #intro-overlay.zoom-out #intro-text { transform: scale(8); opacity: 0; }
 
-  /* ===== NUEVO: contenedor de foto superior configurable ===== */
+  /* ===== HEADER FOTO ===== */
   #header-logo-wrap {
     display: flex;
     justify-content: center;
@@ -86,7 +100,6 @@
     filter: drop-shadow(0 4px 12px rgba(163, 177, 198, 0.35));
   }
   #header-logo-wrap.hidden { display: none; }
-  /* ========================================================== */
 
   h1 {
     text-align: center;
@@ -101,6 +114,7 @@
       0 6px 16px rgba(163, 177, 198, 0.35);
     position: relative;
   }
+  h1.hidden { display: none; }
   h1::after {
     content: "";
     display: block;
@@ -854,19 +868,18 @@
 <body>
 
 <div id="intro-overlay">
-  <img id="intro-logo" src="https://raw.githubusercontent.com/internalcontrolengineering/Desarrollos/main/LogoCI-G.png" alt="CI Logo">
+  <img id="intro-logo" alt="Intro">
+  <div id="intro-text"></div>
 </div>
 
 <div id="toast-container"></div>
 
 <div class="container">
-  <!-- NUEVO: Foto configurable arriba de BioSync -->
   <div id="header-logo-wrap" class="hidden">
-    <img id="header-logo" src="" alt="Logo superior">
+    <img id="header-logo" alt="Logo superior">
   </div>
-  <!-- ================================================== -->
 
-  <h1>BioSync</h1>
+  <h1 id="app-titulo" class="hidden"></h1>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="escaner">Biométrico de Asistencia</button>
@@ -969,6 +982,10 @@
             <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
           </select>
         </div>
+        <div>
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; text-transform: uppercase; font-weight: 800;">&nbsp;</label>
+          <button id="btnRestablecerFiltros" class="action exportar" style="padding: 12px 16px; font-size: 13.5px;">Restablecer filtros</button>
+        </div>
       </div>
 
       <div id="contenedor-registros" style="overflow-x: auto;">
@@ -1007,6 +1024,12 @@
     <h3 style="text-align: center; margin-bottom: 10px;">Configuraciones</h3>
     <p style="text-align: center; color: #7a7a88; font-size: 13.5px; margin-bottom: 22px;">Ajusta el tiempo mínimo de salida, las coordenadas de la oficina y el radio permitido.</p>
 
+    <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Nombre de la app</label>
+      <input type="text" id="config-app-name" placeholder="Escribe el nombre de la app..." style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 15px; margin-bottom: 0; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700; text-align: center; max-width: none;">
+      <p style="font-size: 12px; color: #8a8a96; margin: 10px 0 0 0; text-align: center;">Se muestra arriba como título y en el intro si no hay foto configurada.</p>
+    </div>
+
     <div class="config-row" style="margin-top: 0;">
       <span>Encender cámara al abrir</span>
       <label class="switch"><input type="checkbox" id="check-camara-auto"><span class="slider"></span></label>
@@ -1019,11 +1042,10 @@
     </div>
     <p style="font-size: 12.5px; color: #8a8a96; margin: 10px 0 18px 0; text-align: center;">Solicita el permiso de ubicación una sola vez al abrir la app.</p>
 
-    <!-- NUEVO: bloque de configuración de la foto superior -->
     <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
-      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Foto superior (arriba de BioSync)</label>
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Foto superior (arriba del título)</label>
       <div style="display: flex; justify-content: center; margin-bottom: 12px;">
-        <img id="config-header-logo-preview" src="" alt="Vista previa" style="display: none; object-fit: contain; border-radius: 12px; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 4px 4px 12px rgba(163, 177, 198, 0.4); max-width: 100%;">
+        <img id="config-header-logo-preview" alt="Vista previa" style="display: none; object-fit: contain; border-radius: 12px; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 4px 4px 12px rgba(163, 177, 198, 0.4); max-width: 100%;">
         <span id="config-header-logo-empty" style="color: #8a8a96; font-size: 13px; font-weight: 700;">Sin imagen configurada</span>
       </div>
       <input type="file" id="config-header-logo-file" accept="image/*" style="max-width: 100%; margin-bottom: 12px;">
@@ -1040,9 +1062,31 @@
       <div style="margin-top: 12px;">
         <button type="button" id="btn-config-header-logo-quitar" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.9); background: linear-gradient(145deg, #fff0f0, #fde0e0); color: var(--danger); font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 4px 4px 10px rgba(255, 59, 48, 0.18), -4px -4px 10px rgba(255, 255, 255, 0.9);">Quitar imagen</button>
       </div>
-      <p style="font-size: 12px; color: #8a8a96; margin: 10px 0 0 0; text-align: center;">La imagen se mostrará centrada arriba de "BioSync".</p>
+      <p style="font-size: 12px; color: #8a8a96; margin: 10px 0 0 0; text-align: center;">La imagen se mostrará centrada arriba del título.</p>
     </div>
-    <!-- ================================================== -->
+
+    <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Logo de inicio (zoom)</label>
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <img id="config-intro-logo-preview" alt="Vista previa intro" style="display: none; object-fit: contain; border-radius: 12px; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 4px 4px 12px rgba(163, 177, 198, 0.4); max-width: 100%;">
+        <span id="config-intro-logo-empty" style="color: #8a8a96; font-size: 13px; font-weight: 700;">Sin imagen configurada (se mostrará el nombre)</span>
+      </div>
+      <input type="file" id="config-intro-logo-file" accept="image/*" style="max-width: 100%; margin-bottom: 12px;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="flex: 1;">
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; text-transform: uppercase; font-weight: 800;">Ancho (px)</label>
+          <input type="number" id="config-intro-logo-width" min="40" max="800" step="1" value="200" style="width: 100%; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 14px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+        </div>
+        <div style="flex: 1;">
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; text-transform: uppercase; font-weight: 800;">Alto (px, opcional)</label>
+          <input type="number" id="config-intro-logo-height" min="0" max="800" step="1" value="0" placeholder="Auto" style="width: 100%; padding: 12px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 14px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <button type="button" id="btn-config-intro-logo-quitar" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.9); background: linear-gradient(145deg, #fff0f0, #fde0e0); color: var(--danger); font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 4px 4px 10px rgba(255, 59, 48, 0.18), -4px -4px 10px rgba(255, 255, 255, 0.9);">Quitar imagen</button>
+      </div>
+      <p style="font-size: 12px; color: #8a8a96; margin: 10px 0 0 0; text-align: center;">Si no hay imagen, el intro muestra el nombre de la app. Si hay imagen, la imagen siempre será el intro.</p>
+    </div>
 
     <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
       <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Tiempo mínimo para salida</label>
@@ -1381,12 +1425,49 @@
     return Number.isFinite(n) ? n : NaN;
   }
 
-  // ===== NUEVO: variables para la foto superior configurable =====
+  // ===== Foto superior configurable =====
   let HEADER_LOGO_SRC = null;
   let HEADER_LOGO_WIDTH = 120;
   let HEADER_LOGO_HEIGHT = 120;
-  let headerLogoNueva = null;      // foto recién cargada en el modal (aún no guardada)
-  let headerLogoEliminada = false; // bandera de eliminación desde el modal
+  let headerLogoNueva = null;
+  let headerLogoEliminada = false;
+
+  // ===== Logo de la intro configurable (sin default) =====
+  let INTRO_LOGO_SRC = null;
+  let INTRO_LOGO_WIDTH = 200;
+  let INTRO_LOGO_HEIGHT = 0;
+  let introLogoNueva = null;
+  let introLogoEliminada = false;
+
+  // ===== Nombre de la app configurable (sin default) =====
+  let APP_NAME = "";
+  const APP_NAME_FALLBACK = "BioSync";
+  let appNameNuevo = null;
+
+  function nombreAppActual() {
+    if (appNameNuevo !== null) {
+      const v = String(appNameNuevo).trim();
+      return v || APP_NAME_FALLBACK;
+    }
+    const v = String(APP_NAME || "").trim();
+    return v || APP_NAME_FALLBACK;
+  }
+
+  function aplicarNombreApp() {
+    const h1 = document.getElementById("app-titulo");
+    if (!h1) return;
+    const guardado = String((appNameNuevo !== null ? appNameNuevo : APP_NAME) || "").trim();
+    if (guardado) {
+      h1.textContent = guardado;
+      h1.classList.remove("hidden");
+    } else {
+      h1.textContent = "";
+      h1.classList.add("hidden");
+    }
+    const introText = document.getElementById("intro-text");
+    if (introText) introText.textContent = nombreAppActual();
+    document.title = guardado || APP_NAME_FALLBACK;
+  }
 
   function aplicarHeaderLogo() {
     const wrap = document.getElementById("header-logo-wrap");
@@ -1420,7 +1501,112 @@
       empty.style.display = "inline";
     }
   }
-  // ==============================================================
+
+  // Reglas del intro:
+  // - Sin foto ni nombre → "BioSync"
+  // - Solo nombre → nombre
+  // - Foto (con o sin nombre) → foto
+  function aplicarIntroLogo() {
+    const img = document.getElementById("intro-logo");
+    const txt = document.getElementById("intro-text");
+    if (!img || !txt) return;
+    const fotoActual = introLogoNueva || (introLogoEliminada ? null : INTRO_LOGO_SRC);
+    if (fotoActual) {
+      img.src = fotoActual;
+      img.style.width = INTRO_LOGO_WIDTH + "px";
+      if (INTRO_LOGO_HEIGHT > 0) img.style.height = INTRO_LOGO_HEIGHT + "px";
+      else img.style.height = "auto";
+      img.style.display = "block";
+      txt.style.display = "none";
+    } else {
+      img.removeAttribute("src");
+      img.style.display = "none";
+      txt.textContent = nombreAppActual();
+      txt.style.display = "block";
+    }
+  }
+
+  function pintarPreviewIntroLogoEnModal() {
+    const preview = document.getElementById("config-intro-logo-preview");
+    const empty = document.getElementById("config-intro-logo-empty");
+    if (!preview || !empty) return;
+    const src = introLogoNueva || (introLogoEliminada ? null : INTRO_LOGO_SRC);
+    if (src) {
+      preview.src = src;
+      preview.style.width = INTRO_LOGO_WIDTH + "px";
+      if (INTRO_LOGO_HEIGHT > 0) preview.style.height = INTRO_LOGO_HEIGHT + "px";
+      else preview.style.height = "auto";
+      preview.style.display = "block";
+      empty.style.display = "none";
+    } else {
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      empty.style.display = "inline";
+    }
+  }
+
+  // Arranca el intro.
+  function iniciarIntro() {
+    const intro = document.getElementById("intro-overlay");
+    if (!intro) return;
+
+    const img = document.getElementById("intro-logo");
+    const txt = document.getElementById("intro-text");
+    const hayFoto = !!(INTRO_LOGO_SRC);
+    const nombreGuardado = String(APP_NAME || "").trim();
+
+    const hacerZoomYSalir = () => {
+      intro.classList.add("zoom-out");
+      setTimeout(() => {
+        intro.classList.add("hide");
+        setTimeout(() => {
+          if (intro.parentNode) intro.remove();
+        }, 800);
+      }, 2200);
+    };
+
+    if (hayFoto && nombreGuardado) {
+      img.style.display = "none";
+      txt.style.display = "block";
+      txt.textContent = nombreGuardado;
+
+      setTimeout(() => {
+        txt.style.display = "none";
+        img.src = INTRO_LOGO_SRC;
+        img.style.width = INTRO_LOGO_WIDTH + "px";
+        if (INTRO_LOGO_HEIGHT > 0) img.style.height = INTRO_LOGO_HEIGHT + "px";
+        else img.style.height = "auto";
+        img.style.display = "block";
+
+        setTimeout(() => {
+          hacerZoomYSalir();
+        }, 1500);
+      }, 1200);
+      return;
+    }
+
+    if (hayFoto) {
+      txt.style.display = "none";
+      img.src = INTRO_LOGO_SRC;
+      img.style.width = INTRO_LOGO_WIDTH + "px";
+      if (INTRO_LOGO_HEIGHT > 0) img.style.height = INTRO_LOGO_HEIGHT + "px";
+      else img.style.height = "auto";
+      img.style.display = "block";
+
+      setTimeout(() => {
+        hacerZoomYSalir();
+      }, 1500);
+      return;
+    }
+
+    img.style.display = "none";
+    txt.style.display = "block";
+    txt.textContent = nombreGuardado || APP_NAME_FALLBACK;
+
+    setTimeout(() => {
+      hacerZoomYSalir();
+    }, 1500);
+  }
 
   function guardarConfiguraciones() {
     const idsCampos = ["input-horas-minimas", "input-minutos-minimos", "input-radio-metros", "input-oficina-lat", "input-oficina-lng"];
@@ -1446,18 +1632,28 @@
       if (Number.isNaN(lat) || lat < -90 || lat > 90) { marcarInvalido("input-oficina-lat"); mostrarError("La latitud debe ser un número entre -90 y 90."); return; }
       if (Number.isNaN(lng) || lng < -180 || lng > 180) { marcarInvalido("input-oficina-lng"); mostrarError("La longitud debe ser un número entre -180 y 180."); return; }
 
-      // NUEVO: validar dimensiones de la foto superior
       const headerW = leerEntero("config-header-logo-width");
       const headerH = leerEntero("config-header-logo-height");
       if (Number.isNaN(headerW) || headerW < 20 || headerW > 800) { marcarInvalido("config-header-logo-width"); mostrarError("El ancho de la foto superior debe ser entre 20 y 800 px."); return; }
       if (Number.isNaN(headerH) || headerH < 20 || headerH > 800) { marcarInvalido("config-header-logo-height"); mostrarError("El alto de la foto superior debe ser entre 20 y 800 px."); return; }
+
+      const introW = leerEntero("config-intro-logo-width");
+      const introHEl = document.getElementById("config-intro-logo-height");
+      const introHRaw = String(introHEl?.value ?? "").trim();
+      const introH = introHRaw === "" ? 0 : Number(introHRaw);
+      if (Number.isNaN(introW) || introW < 40 || introW > 800) { marcarInvalido("config-intro-logo-width"); mostrarError("El ancho del logo de inicio debe ser entre 40 y 800 px."); return; }
+      if (!Number.isFinite(introH) || introH < 0 || introH > 800) { marcarInvalido("config-intro-logo-height"); mostrarError("El alto del logo de inicio debe ser entre 0 y 800 px (0 = auto)."); return; }
 
       HORAS_REQUERIDAS = horas + (minutos / 60);
       RADIO_METROS = radio;
       OFICINA_LAT = lat;
       OFICINA_LON = lng;
 
-      // NUEVO: aplicar cambios locales de la foto superior
+      const nombreInput = document.getElementById("config-app-name");
+      APP_NAME = String(nombreInput?.value ?? "").trim();
+      appNameNuevo = null;
+      aplicarNombreApp();
+
       if (headerLogoNueva) {
         HEADER_LOGO_SRC = headerLogoNueva;
       } else if (headerLogoEliminada) {
@@ -1469,6 +1665,17 @@
       headerLogoEliminada = false;
       aplicarHeaderLogo();
 
+      if (introLogoNueva) {
+        INTRO_LOGO_SRC = introLogoNueva;
+      } else if (introLogoEliminada) {
+        INTRO_LOGO_SRC = null;
+      }
+      INTRO_LOGO_WIDTH = introW;
+      INTRO_LOGO_HEIGHT = introH;
+      introLogoNueva = null;
+      introLogoEliminada = false;
+      aplicarIntroLogo();
+
       const autoCam = !!document.getElementById("check-camara-auto")?.checked;
       const autoUbi = !!document.getElementById("check-ubicacion-auto")?.checked;
 
@@ -1478,21 +1685,23 @@
             id: 1, auto_camara: autoCam, auto_ubicacion: autoUbi, horas_minimas: HORAS_REQUERIDAS,
             radio_metros: radio, oficina_lat: lat, oficina_lon: lng, updated_at: new Date().toISOString()
           };
-          // NUEVO: guardar también la foto superior y sus dimensiones
           row.header_logo = HEADER_LOGO_SRC || null;
           row.header_logo_width = HEADER_LOGO_WIDTH;
           row.header_logo_height = HEADER_LOGO_HEIGHT;
+          row.intro_logo = INTRO_LOGO_SRC || null;
+          row.intro_logo_width = INTRO_LOGO_WIDTH;
+          row.intro_logo_height = INTRO_LOGO_HEIGHT;
+          row.app_name = (APP_NAME || "").trim() || null;
 
           const { error } = await sb.from("configuraciones").upsert(row, { onConflict: "id" });
           if (error) {
-            // Si el error es por columnas nuevas inexistentes, reintentamos sin ellas para no romper la app
             const msg = String(error.message || "").toLowerCase();
-            if (msg.includes("column") || msg.includes("header_logo") || msg.includes("schema")) {
-              console.warn("Columnas header_logo no existen en Supabase. Guardando sin foto superior. Error:", error);
-              const { header_logo, header_logo_width, header_logo_height, ...rowSinLogo } = row;
-              const { error: err2 } = await sb.from("configuraciones").upsert(rowSinLogo, { onConflict: "id" });
+            if (msg.includes("column") || msg.includes("header_logo") || msg.includes("intro_logo") || msg.includes("app_name") || msg.includes("schema")) {
+              console.warn("Algunas columnas nuevas no existen en Supabase. Guardando sin imágenes ni nombre. Error:", error);
+              const { header_logo, header_logo_width, header_logo_height, intro_logo, intro_logo_width, intro_logo_height, app_name, ...rowSinImg } = row;
+              const { error: err2 } = await sb.from("configuraciones").upsert(rowSinImg, { onConflict: "id" });
               if (err2) throw err2;
-              window.mostrarToast("Configuración guardada (nota: agrega columnas header_logo, header_logo_width y header_logo_height en Supabase para persistir la foto).", "info", 7000);
+              window.mostrarToast("Configuración guardada (nota: agrega las columnas header_logo*, intro_logo* y app_name en Supabase para persistir).", "info", 8000);
             } else {
               throw error;
             }
@@ -1522,7 +1731,6 @@
       btnGuardarConfig._bioSyncBound = true;
     }
 
-    // NUEVO: listeners de la foto superior
     const inputHeader = document.getElementById("config-header-logo-file");
     if (inputHeader && !inputHeader._bioSyncBound) {
       inputHeader.addEventListener("click", function () { this.value = ""; });
@@ -1575,6 +1783,83 @@
         }
       });
       inpH._bioSyncBound = true;
+    }
+
+    const inputIntro = document.getElementById("config-intro-logo-file");
+    if (inputIntro && !inputIntro._bioSyncBound) {
+      inputIntro.addEventListener("click", function () { this.value = ""; });
+      inputIntro.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          introLogoNueva = reader.result;
+          introLogoEliminada = false;
+          pintarPreviewIntroLogoEnModal();
+        };
+        reader.readAsDataURL(file);
+      });
+      inputIntro._bioSyncBound = true;
+    }
+
+    const btnQuitarIntro = document.getElementById("btn-config-intro-logo-quitar");
+    if (btnQuitarIntro && !btnQuitarIntro._bioSyncBound) {
+      btnQuitarIntro.addEventListener("click", () => {
+        introLogoNueva = null;
+        introLogoEliminada = true;
+        const inp = document.getElementById("config-intro-logo-file");
+        if (inp) inp.value = "";
+        pintarPreviewIntroLogoEnModal();
+      });
+      btnQuitarIntro._bioSyncBound = true;
+    }
+
+    const inpIntroW = document.getElementById("config-intro-logo-width");
+    const inpIntroH = document.getElementById("config-intro-logo-height");
+    if (inpIntroW && !inpIntroW._bioSyncBound) {
+      inpIntroW.addEventListener("input", () => {
+        const v = parseInt(inpIntroW.value, 10);
+        if (Number.isFinite(v) && v >= 40 && v <= 800) {
+          INTRO_LOGO_WIDTH = v;
+          pintarPreviewIntroLogoEnModal();
+        }
+      });
+      inpIntroW._bioSyncBound = true;
+    }
+    if (inpIntroH && !inpIntroH._bioSyncBound) {
+      inpIntroH.addEventListener("input", () => {
+        const raw = String(inpIntroH.value).trim();
+        const v = raw === "" ? 0 : parseInt(raw, 10);
+        if (Number.isFinite(v) && v >= 0 && v <= 800) {
+          INTRO_LOGO_HEIGHT = v;
+          pintarPreviewIntroLogoEnModal();
+        }
+      });
+      inpIntroH._bioSyncBound = true;
+    }
+
+    const inpNombre = document.getElementById("config-app-name");
+    if (inpNombre && !inpNombre._bioSyncBound) {
+      inpNombre.addEventListener("input", () => {
+        appNameNuevo = inpNombre.value;
+        aplicarNombreApp();
+        aplicarIntroLogo();
+      });
+      inpNombre._bioSyncBound = true;
+    }
+
+    // NUEVO: Botón "Restablecer filtros" en Registro de Asistencias
+    const btnRestablecer = document.getElementById("btnRestablecerFiltros");
+    if (btnRestablecer && !btnRestablecer._bioSyncBound) {
+      btnRestablecer.addEventListener("click", () => {
+        const selectAnio = document.getElementById("filtro-anio");
+        const selectMes = document.getElementById("filtro-mes");
+        if (selectAnio) selectAnio.value = "todos";
+        if (selectMes) selectMes.value = "todos";
+        aplicarFiltrosYRender();
+        window.mostrarToast("Filtros restablecidos.", "ok", 2500);
+      });
+      btnRestablecer._bioSyncBound = true;
     }
   });
 
@@ -1636,17 +1921,6 @@
 
   const adminMenu = document.getElementById("admin-menu");
   const checkCamaraAuto = document.getElementById("check-camara-auto");
-
-  window.addEventListener("load", () => {
-    const intro = document.getElementById("intro-overlay");
-    setTimeout(() => {
-      intro.classList.add("zoom-out");
-      setTimeout(() => {
-        intro.classList.add("hide");
-        setTimeout(() => intro.remove(), 800);
-      }, 1000);
-    }, 1500);
-  });
 
   window.toggleMenuAdmin = function() {
     adminMenu.classList.toggle("show");
@@ -1807,7 +2081,13 @@
         ["input-horas-minimas","input-minutos-minimos","input-radio-metros","input-oficina-lat","input-oficina-lng"]
           .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove("campo-invalido"); });
 
-        // NUEVO: precargar la foto superior y sus dimensiones en el modal de configuración
+        const inpNombre = document.getElementById("config-app-name");
+        if (inpNombre) {
+          inpNombre.value = (APP_NAME || "").trim();
+          inpNombre.classList.remove("campo-invalido");
+        }
+        appNameNuevo = null;
+
         headerLogoNueva = null;
         headerLogoEliminada = false;
         document.getElementById("config-header-logo-file").value = "";
@@ -1815,6 +2095,14 @@
         document.getElementById("config-header-logo-height").value = HEADER_LOGO_HEIGHT || 120;
         ["config-header-logo-width","config-header-logo-height"].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove("campo-invalido"); });
         pintarPreviewHeaderLogoEnModal();
+
+        introLogoNueva = null;
+        introLogoEliminada = false;
+        document.getElementById("config-intro-logo-file").value = "";
+        document.getElementById("config-intro-logo-width").value = INTRO_LOGO_WIDTH || 200;
+        document.getElementById("config-intro-logo-height").value = INTRO_LOGO_HEIGHT || 0;
+        ["config-intro-logo-width","config-intro-logo-height"].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove("campo-invalido"); });
+        pintarPreviewIntroLogoEnModal();
 
         abrirModal('modal-configuraciones');
       }
@@ -1869,16 +2157,33 @@
         AUTO_CAMARA = data.auto_camara !== false;
         AUTO_UBICACION = data.auto_ubicacion !== false;
 
-        // NUEVO: cargar la foto superior y sus dimensiones si existen
+        APP_NAME = (data.app_name != null) ? String(data.app_name) : "";
+
         if (data.header_logo) HEADER_LOGO_SRC = data.header_logo;
         const w = parseInt(data.header_logo_width, 10);
         const h = parseInt(data.header_logo_height, 10);
         if (Number.isFinite(w) && w >= 20 && w <= 800) HEADER_LOGO_WIDTH = w;
         if (Number.isFinite(h) && h >= 20 && h <= 800) HEADER_LOGO_HEIGHT = h;
         aplicarHeaderLogo();
+
+        INTRO_LOGO_SRC = data.intro_logo ? data.intro_logo : null;
+        const iw = parseInt(data.intro_logo_width, 10);
+        const ih = parseInt(data.intro_logo_height, 10);
+        if (Number.isFinite(iw) && iw >= 40 && iw <= 800) INTRO_LOGO_WIDTH = iw;
+        if (Number.isFinite(ih) && ih >= 0 && ih <= 800) INTRO_LOGO_HEIGHT = ih;
+
+        aplicarNombreApp();
+        aplicarIntroLogo();
+      } else {
+        APP_NAME = "";
+        INTRO_LOGO_SRC = null;
+        aplicarNombreApp();
+        aplicarIntroLogo();
       }
     } catch (e) {
       console.warn("No se pudo cargar configuraciones (usando defaults):", e);
+      aplicarNombreApp();
+      aplicarIntroLogo();
     }
   }
 
@@ -1953,7 +2258,6 @@
   }
 
   async function actualizarRegistroDB(reg) {
-    // reg = { id, name, employeeId, entrada: {hora,foto,ubicacion}|null, salida: {hora,foto,ubicacion}|null }
     const row = { updated_at: new Date().toISOString() };
     if (reg.name != null) row.name = reg.name;
     if (reg.employeeId != null) row.employee_id = String(reg.employeeId);
@@ -2264,7 +2568,6 @@
             salidaHTML = diaCerrado ? '<span style="color:var(--danger);font-weight:800;">Sin registro</span>' : '<span style="color:#8a8a96;font-weight:600;">Pendiente</span>';
           }
 
-          // CORRECCIÓN: Asegurar que se envíen los IDs correctos en el payload
           const payload = {
             name: emp.name, employeeId: emp.id,
             dbId: emp.dbId || (emp.entrada && emp.entrada.id) || (emp.salida && emp.salida.id) || null,
@@ -2352,7 +2655,6 @@
     };
   }
 
-  // CORRECCIÓN: Precarga correcta y muestra "Sin registro" cuando no existe entrada o salida
   function abrirEditorRegistro(payloadEncoded) {
     let data;
     try {
@@ -2396,7 +2698,6 @@
     const bloqueE = document.getElementById("edit-bloque-entrada");
     const bloqueS = document.getElementById("edit-bloque-salida");
 
-    // === ENTRADA ===
     if (registroEditando.entrada) {
       bloqueE.style.display = "block";
       bloqueE.dataset.sinRegistro = "";
@@ -2409,7 +2710,6 @@
         ? `<img src="${registroEditando.entrada.foto}" class="foto-clickable" style="height:80px;width:80px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`
         : "<span style='color:#8a8a96;font-size:13px;font-weight:600;'>Sin foto</span>";
     } else {
-      // Sin entrada registrada -> bloque visible en modo "Sin registro"
       bloqueE.style.display = "block";
       bloqueE.dataset.sinRegistro = "1";
       const entradaHoraEl = document.getElementById("edit-entrada-hora");
@@ -2424,7 +2724,6 @@
       }
     }
 
-    // === SALIDA ===
     if (registroEditando.salida) {
       bloqueS.style.display = "block";
       bloqueS.dataset.sinRegistro = "";
@@ -2437,7 +2736,6 @@
         ? `<img src="${registroEditando.salida.foto}" class="foto-clickable" style="height:80px;width:80px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`
         : "<span style='color:#8a8a96;font-size:13px;font-weight:600;'>Sin foto</span>";
     } else {
-      // Sin salida registrada -> bloque visible en modo "Sin registro"
       bloqueS.style.display = "block";
       bloqueS.dataset.sinRegistro = "1";
       const salidaHoraEl = document.getElementById("edit-salida-hora");
@@ -2482,7 +2780,6 @@
     }
   });
 
-  // CORRECCIÓN: Construye correctamente {entrada, salida} para no borrar la información previa
   document.getElementById("btn-guardar-edicion-registro").addEventListener("click", () => {
     if (!registroEditando) return;
     cerrarModal("modal-editar-registro");
@@ -2498,22 +2795,20 @@
           const idDb = (entradaOriginal && entradaOriginal.dbId) || (salidaOriginal && salidaOriginal.dbId);
           if (idDb == null) throw new Error("No se encontró el ID del registro.");
 
-          // --- ENTRADA ---
           let entradaFinal = null;
           if (entradaOriginal) {
             const horaInput = datetimeLocalToISO(document.getElementById("edit-entrada-hora").value);
             const lat = parseFloat(document.getElementById("edit-entrada-lat").value);
             const lng = parseFloat(document.getElementById("edit-entrada-lng").value);
             entradaFinal = {
-              hora: horaInput || entradaOriginal.hora,                 // si no cambió, conserva la original
-              foto: fotoEntradaNueva || entradaOriginal.foto || null,  // si no subió/capturó, conserva la original
+              hora: horaInput || entradaOriginal.hora,
+              foto: fotoEntradaNueva || entradaOriginal.foto || null,
               ubicacion: (!isNaN(lat) && !isNaN(lng))
                 ? { lat, lng }
-                : (entradaOriginal.ubicacion || null)                  // si no cambió, conserva la original
+                : (entradaOriginal.ubicacion || null)
             };
           }
 
-          // --- SALIDA ---
           let salidaFinal = null;
           if (salidaOriginal) {
             const horaInput = datetimeLocalToISO(document.getElementById("edit-salida-hora").value);
@@ -2903,16 +3198,24 @@
 
   async function init() {
     try {
+      const h1 = document.getElementById("app-titulo");
+      if (h1) h1.classList.add("hidden");
+
       await cargarConfiguraciones();
-      await cargarTodoDB();
+      aplicarNombreApp();
+      aplicarHeaderLogo();
+      iniciarIntro();
+
+      cargarTodoDB().catch(() => {});
       suscribirRealtime();
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL).catch(() => {});
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL).catch(() => {});
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL).catch(() => {});
       if (AUTO_CAMARA) setTimeout(() => { encenderCamara(true); }, 600);
       if (AUTO_UBICACION) setTimeout(() => solicitarPermisoUbicacion(), 1200);
     } catch (e) {
       mostrarToast("Error: " + e.message, "error", 5000);
+      iniciarIntro();
     }
   }
 
@@ -3317,5 +3620,24 @@
   init();
 })();
 </script>
+<footer>
+  <div style="text-align:center; font-size:1rem; background: linear-gradient(to right, #22d3ee, #06b6d4); -webkit-background-clip: text; background-clip: text; color: transparent; position:fixed; bottom:0px; width:100%; z-index:101; margin-top:1px; font-family: 'Garamond', serif;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+        <img src="https://raw.githubusercontent.com/internalcontrolengineering/Desarrollos/main/LogoCI-G.png" 
+             alt="Control Interno" 
+             style="height: 22px; width: auto; object-fit: contain; opacity: 0.5;">
+        <div style="width: 1px; height: 24px; background-color: #cbd5e1;"></div>
+        <div style="display: flex; flex-direction: column; line-height: 1.2;">
+            <span style="font-size: 0.5rem; color: #0A2540;">Control Interno</span>
+            <span style="font-size: 0.4rem; color: #94a3b8; font-weight: 500;">Ingeniería de Control</span>
+        </div>
+        <div style="width: 1px; height: 24px; background-color: #cbd5e1;"></div>
+        <div style="display: flex; flex-direction: column; line-height: 1.2;">
+            <span style="font-size: 0.5rem; color: #0A2540;">BioSync | Control de Asistencia</span>
+            <span style="font-size: 0.4rem; color: #94a3b8; font-weight: 500;">V1.0 | Noviembre 2026</span>
+        </div>
+    </div>
+  </div>
+</footer>
 </body>
 </html>
