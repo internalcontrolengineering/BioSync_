@@ -925,9 +925,18 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
   "use strict";
+
+  // ===================================================================
+  // SUPABASE CLIENT
+  // ===================================================================
+  const SUPABASE_URL = "https://nqincxofxrupmlkdtzeh.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaW5jeG9meHJ1cG1sa2R0emVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM5OTM0MDUsImV4cCI6MjEwOTU2OTQwNX0.4MfE8nuvR3dltl8xHDeSIdN_ZlEI6_AMmp8O8GA0pzQ";
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ===================================================================
   // 1) DEFINICIONES TEMPRANAS (hoisted)
@@ -1055,38 +1064,33 @@
       RADIO_METROS = radio;
       OFICINA_LAT = lat;
       OFICINA_LON = lng;
-      
-      // ===================================================================
-      // CORRECCIÓN QUOTA EXCEEDED (Edge): Escritura segura y limpieza previa
-      // ===================================================================
-      try {
-        localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
-        localStorage.setItem("radioMetros", radio);
-        localStorage.setItem("oficinaLat", lat);
-        localStorage.setItem("oficinaLon", lng);
-      } catch (storageErr) {
-        console.warn("LocalStorage lleno. Limpiando posibles residuos...", storageErr);
-        // Si falla por cuota, intentamos borrar basura residual (fotos viejas que se quedaron en versiones pasadas)
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith("foto_") || key.startsWith("temp_") || key.includes("base64"))) {
-            localStorage.removeItem(key);
-          }
-        }
-        // Reintentamos guardar
-        try {
-          localStorage.setItem("horasMinimas", HORAS_REQUERIDAS);
-          localStorage.setItem("radioMetros", radio);
-          localStorage.setItem("oficinaLat", lat);
-          localStorage.setItem("oficinaLon", lng);
-        } catch (retryErr) {
-          window.mostrarToast("El almacenamiento del navegador está lleno. Libera espacio borrando datos antiguos.", "error", 7000);
-        }
-      }
 
-      limpiarClaseInvalida(idsCampos);
-      cerrarModal('modal-configuraciones');
-      window.mostrarToast(`Configuración guardada · Tiempo mínimo: ${horas}h ${minutos}m · Radio: ${radio} m`, "ok", 4500);
+      const autoCam = !!document.getElementById("check-camara-auto")?.checked;
+      const autoUbi = !!document.getElementById("check-ubicacion-auto")?.checked;
+
+      // Guardar en Supabase (nube)
+      (async () => {
+        try {
+          const { error } = await sb.from("configuraciones").upsert({
+            id: 1,
+            auto_camara: autoCam,
+            auto_ubicacion: autoUbi,
+            horas_minimas: HORAS_REQUERIDAS,
+            radio_metros: radio,
+            oficina_lat: lat,
+            oficina_lon: lng,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+          if (error) throw error;
+          limpiarClaseInvalida(idsCampos);
+          cerrarModal('modal-configuraciones');
+          window.mostrarToast(`Configuración guardada · Tiempo mínimo: ${horas}h ${minutos}m · Radio: ${radio} m`, "ok", 4500);
+        } catch (storageErr) {
+          console.error("Error guardando config en Supabase:", storageErr);
+          window.mostrarToast("Error al guardar en la nube: " + (storageErr.message || storageErr), "error", 7000);
+        }
+      })();
+      return; // evitar el catch exterior porque el guardado es async
     } catch (err) {
       window.mostrarToast("Error inesperado al guardar: " + (err && err.message ? err.message : err), "error", 6000);
     }
@@ -1109,18 +1113,19 @@
 
   const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
   const THRESHOLD = 0.55; 
-  let OFICINA_LAT = parseFloat(localStorage.getItem("oficinaLat"));
-  if (isNaN(OFICINA_LAT)) OFICINA_LAT = 20.971006;
-  let OFICINA_LON = parseFloat(localStorage.getItem("oficinaLon"));
-  if (isNaN(OFICINA_LON)) OFICINA_LON = -89.612914;
+  let OFICINA_LAT = 20.971006;
+  let OFICINA_LON = -89.612914;
   const VALIDAR_UBICACION = true; 
   const PASSWORD_ADMIN = "ControlInterno2026";
   const HORAS_SIN_REGISTRO = 8;
 
-  let HORAS_REQUERIDAS = parseFloat(localStorage.getItem("horasMinimas")) || 5;
-  let RADIO_METROS = parseInt(localStorage.getItem("radioMetros")) || 100;
+  let HORAS_REQUERIDAS = 5;
+  let RADIO_METROS = 100;
+  let AUTO_CAMARA = true;
+  let AUTO_UBICACION = true;
 
   let labeledDescriptors = []; 
+  let cacheRegistrosCompletos = [];
   let listo = false;
   let rostroActual = null; 
   let guardando = false;
@@ -1140,7 +1145,6 @@
   let ultimaEvaluacionModal = 0;
   
   let streamGlobal = null;
-  let db;
   let bucleActivo = false; 
   let primerCuadroListo = false;
 
@@ -1385,10 +1389,8 @@
           videoScanner.srcObject = null;
         }
       } else if (accionPendienteAdmin === "config") {
-        const autoCam = localStorage.getItem("autoCamara") !== "false";
-        checkCamaraAuto.checked = autoCam;
-        const autoUbi = localStorage.getItem("autoUbicacion") !== "false";
-        document.getElementById("check-ubicacion-auto").checked = autoUbi;
+        checkCamaraAuto.checked = !!AUTO_CAMARA;
+        document.getElementById("check-ubicacion-auto").checked = !!AUTO_UBICACION;
         const totalMinutos = Math.round(HORAS_REQUERIDAS * 60);
         document.getElementById("input-horas-minimas").value = Math.floor(totalMinutos / 60);
         document.getElementById("input-minutos-minimos").value = totalMinutos % 60;
@@ -1408,14 +1410,18 @@
   };
 
   checkCamaraAuto.addEventListener('change', (e) => {
-    localStorage.setItem("autoCamara", e.target.checked);
+    AUTO_CAMARA = !!e.target.checked;
+    sb.from("configuraciones").upsert({ id: 1, auto_camara: AUTO_CAMARA, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .then(({ error }) => { if (error) console.warn("auto_camara sync:", error); });
     if (e.target.checked) {
       encenderCamara(true);
     }
   });
 
   document.getElementById("check-ubicacion-auto").addEventListener('change', (e) => {
-    localStorage.setItem("autoUbicacion", e.target.checked);
+    AUTO_UBICACION = !!e.target.checked;
+    sb.from("configuraciones").upsert({ id: 1, auto_ubicacion: AUTO_UBICACION, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .then(({ error }) => { if (error) console.warn("auto_ubicacion sync:", error); });
     if (e.target.checked) {
       solicitarPermisoUbicacion();
     }
@@ -1443,71 +1449,314 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
-  function initDB() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open("GuardiasDB", 1);
-      request.onupgradeneeded = e => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains("empleados")) db.createObjectStore("empleados", { keyPath: "employeeId" });
-        if (!db.objectStoreNames.contains("registros")) db.createObjectStore("registros", { keyPath: "id", autoIncrement: true });
-      };
-      request.onsuccess = e => { db = e.target.result; resolve(); };
-      request.onerror = e => reject("Error abriendo DB");
-    });
+  // ===================================================================
+  // SUPABASE STORAGE LAYER (reemplaza IndexedDB + localStorage)
+  // ===================================================================
+
+  async function cargarConfiguraciones() {
+    try {
+      const { data, error } = await sb.from("configuraciones").select("*").eq("id", 1).maybeSingle();
+      if (error) throw error;
+      if (data) {
+        HORAS_REQUERIDAS = Number(data.horas_minimas) || 5;
+        RADIO_METROS = parseInt(data.radio_metros, 10) || 100;
+        OFICINA_LAT = Number(data.oficina_lat);
+        if (!Number.isFinite(OFICINA_LAT)) OFICINA_LAT = 20.971006;
+        OFICINA_LON = Number(data.oficina_lon);
+        if (!Number.isFinite(OFICINA_LON)) OFICINA_LON = -89.612914;
+        AUTO_CAMARA = data.auto_camara !== false;
+        AUTO_UBICACION = data.auto_ubicacion !== false;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar configuraciones (usando defaults):", e);
+    }
   }
 
-  function guardarEmpleadoDB(emp) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("empleados", "readwrite");
-      const req = tx.objectStore("empleados").put({ name: emp.name, employeeId: emp.employeeId, puesto: emp.puesto || "", descriptor: Array.from(emp.descriptor), foto: emp.foto });
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject("Error al guardar");
-    });
+  async function guardarEmpleadoDB(emp) {
+    const row = {
+      employee_id: emp.employeeId,
+      name: emp.name,
+      puesto: emp.puesto || "",
+      descriptor: Array.from(emp.descriptor),
+      foto: emp.foto || null,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await sb.from("empleados").upsert(row, { onConflict: "employee_id" });
+    if (error) throw new Error(error.message || "Error al guardar colaborador");
   }
 
-  function eliminarEmpleadoDB(id) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("empleados", "readwrite");
-      const req = tx.objectStore("empleados").delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject("Error al eliminar");
-    });
+  async function eliminarEmpleadoDB(id) {
+    const { error } = await sb.from("empleados").delete().eq("employee_id", id);
+    if (error) throw new Error(error.message || "Error al eliminar colaborador");
   }
 
-  function guardarRegistroDB(reg) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("registros", "readwrite");
-      const req = tx.objectStore("registros").add(reg);
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject("Error al guardar registro: " + (e.target.error?.message || "clave duplicada"));
-    });
+  // ---- Registros: 1 fila por colaborador + día (entrada y salida juntas) ----
+
+  function fechaLocalDeISO(iso) {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  async function registrarEntradaDB(emp, horaISO, foto, ubicacion) {
+    const fecha = fechaLocalDeISO(horaISO);
+    const empId = String(emp.employeeId);
+
+    // Solo busca la fila de ESTE día (nunca otras fechas)
+    const { data: existing, error: eFind } = await sb.from("registros")
+      .select("id, hora_entrada, fecha")
+      .eq("employee_id", empId)
+      .eq("fecha", fecha)
+      .maybeSingle();
+    if (eFind) throw new Error(eFind.message || "Error al consultar registro del día");
+
+    if (existing && existing.hora_entrada) {
+      throw new Error("Ya registraste entrada hoy.");
+    }
+
+    if (existing) {
+      // Fila del día existe (p.ej. solo salida manual) → actualizar SOLO esa fila por id
+      const { data, error } = await sb.from("registros")
+        .update({
+          hora_entrada: horaISO,
+          foto_entrada: foto || null,
+          ubicacion_entrada: ubicacion || null,
+          name: emp.name,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", existing.id)
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message || "Error al guardar entrada");
+      return data;
+    }
+
+    // Día nuevo → INSERT (no borra ni modifica otros días)
+    const { data, error } = await sb.from("registros").insert({
+      employee_id: empId,
+      name: emp.name,
+      fecha,
+      hora_entrada: horaISO,
+      foto_entrada: foto || null,
+      ubicacion_entrada: ubicacion || null,
+      updated_at: new Date().toISOString()
+    }).select("id").single();
+
+    if (error) {
+      // Si falla por unique (employee_id,fecha), reintentar como update de ese día
+      if (String(error.message || "").toLowerCase().includes("unique") || error.code === "23505") {
+        const { data: again } = await sb.from("registros")
+          .select("id, hora_entrada")
+          .eq("employee_id", empId)
+          .eq("fecha", fecha)
+          .maybeSingle();
+        if (again && again.hora_entrada) throw new Error("Ya registraste entrada hoy.");
+        if (again) {
+          const { data: upd, error: e2 } = await sb.from("registros").update({
+            hora_entrada: horaISO,
+            foto_entrada: foto || null,
+            ubicacion_entrada: ubicacion || null,
+            name: emp.name,
+            updated_at: new Date().toISOString()
+          }).eq("id", again.id).select("id").single();
+          if (e2) throw new Error(e2.message || "Error al guardar entrada");
+          return upd;
+        }
+      }
+      throw new Error(error.message || "Error al guardar entrada");
+    }
+    return data;
+  }
+
+  async function registrarSalidaDB(emp, horaISO, foto, ubicacion) {
+    const fecha = fechaLocalDeISO(horaISO);
+    const empId = String(emp.employeeId);
+
+    // Solo la fila de ESTE día
+    const { data: existing, error: e1 } = await sb.from("registros")
+      .select("id, hora_entrada, hora_salida, fecha")
+      .eq("employee_id", empId)
+      .eq("fecha", fecha)
+      .maybeSingle();
+    if (e1) throw new Error(e1.message || "Error al buscar registro");
+    if (!existing || !existing.hora_entrada) {
+      throw new Error("No hay entrada registrada hoy.");
+    }
+    if (existing.hora_salida) {
+      throw new Error("Ya registraste salida hoy.");
+    }
+    // Update estrictamente por id de esa fila (no toca otros días)
+    const { data, error } = await sb.from("registros")
+      .update({
+        hora_salida: horaISO,
+        foto_salida: foto || null,
+        ubicacion_salida: ubicacion || null,
+        name: emp.name,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", existing.id)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message || "Error al guardar salida");
+    return data;
+  }
+
+  async function actualizarRegistroDB(reg) {
+    // reg: { id, name, employeeId, entrada?: {hora,foto,ubicacion}, salida?: {hora,foto,ubicacion} }
+    const row = {
+      name: reg.name,
+      employee_id: String(reg.employeeId),
+      hora_entrada: reg.entrada ? reg.entrada.hora : null,
+      foto_entrada: reg.entrada ? (reg.entrada.foto || null) : null,
+      ubicacion_entrada: reg.entrada ? (reg.entrada.ubicacion || null) : null,
+      hora_salida: reg.salida ? reg.salida.hora : null,
+      foto_salida: reg.salida ? (reg.salida.foto || null) : null,
+      ubicacion_salida: reg.salida ? (reg.salida.ubicacion || null) : null,
+      updated_at: new Date().toISOString()
+    };
+    if (reg.entrada && reg.entrada.hora) {
+      row.fecha = fechaLocalDeISO(reg.entrada.hora);
+    } else if (reg.salida && reg.salida.hora) {
+      row.fecha = fechaLocalDeISO(reg.salida.hora);
+    }
+    const { error } = await sb.from("registros").update(row).eq("id", reg.id);
+    if (error) throw new Error(error.message || "Error al actualizar registro");
+  }
+
+  async function eliminarRegistroPorId(id) {
+    const { error } = await sb.from("registros").delete().eq("id", id);
+    if (error) throw new Error(error.message || "Error al eliminar registro");
   }
 
   function getRegEmployeeId(r) {
-    return r.employeeId != null ? r.employeeId : r.id;
+    return r.employeeId != null ? r.employeeId : (r.employee_id != null ? r.employee_id : r.id);
+  }
+
+  // Mapea 1 fila DB → objeto unificado usado por la UI
+  function mapRegistroFromDB(r) {
+    return {
+      id: r.id,
+      employeeId: r.employee_id,
+      name: r.name,
+      fecha: r.fecha,
+      entrada: r.hora_entrada ? {
+        id: r.id,
+        tipo: "ENTRADA",
+        employeeId: r.employee_id,
+        name: r.name,
+        hora: r.hora_entrada,
+        foto: r.foto_entrada,
+        ubicacion: r.ubicacion_entrada
+      } : null,
+      salida: r.hora_salida ? {
+        id: r.id,
+        tipo: "SALIDA",
+        employeeId: r.employee_id,
+        name: r.name,
+        hora: r.hora_salida,
+        foto: r.foto_salida,
+        ubicacion: r.ubicacion_salida
+      } : null,
+      // compatibilidad con código que busca .hora / .tipo
+      hora: r.hora_entrada || r.hora_salida,
+      tipo: r.hora_salida ? "SALIDA" : "ENTRADA"
+    };
   }
 
   async function cargarTodoDB() {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(["empleados", "registros"], "readonly");
-      const empStore = tx.objectStore("empleados");
-      const regStore = tx.objectStore("registros");
-      let empleados = [], registros = [];
-      empStore.getAll().onsuccess = e => { empleados = e.target.result; };
-      regStore.getAll().onsuccess = e => { registros = e.target.result; };
-      tx.oncomplete = () => {
-        labeledDescriptors = empleados.map(e => ({
-          name: e.name, employeeId: e.employeeId, puesto: e.puesto || "", descriptor: new Float32Array(e.descriptor), foto: e.foto
-        }));
-        renderTablaEmpleados();
-        renderRegistrosDesdeArray(registros);
-        resolve();
-      };
-      tx.onerror = () => reject("Error al cargar base de datos");
+    const [empRes, regRes] = await Promise.all([
+      sb.from("empleados").select("*").order("name"),
+      sb.from("registros").select("*").order("fecha", { ascending: false })
+    ]);
+    if (empRes.error) throw new Error(empRes.error.message || "Error cargando empleados");
+    if (regRes.error) throw new Error(regRes.error.message || "Error cargando registros");
+
+    labeledDescriptors = (empRes.data || []).map(e => ({
+      name: e.name,
+      employeeId: e.employee_id,
+      puesto: e.puesto || "",
+      descriptor: new Float32Array(e.descriptor || []),
+      foto: e.foto
+    }));
+    renderTablaEmpleados();
+
+    const registros = (regRes.data || []).map(mapRegistroFromDB);
+    cacheRegistrosCompletos = registros;
+    renderRegistrosDesdeArray(registros);
+  }
+
+  let realtimeListo = false;
+  let pollTimer = null;
+
+  async function refrescarEmpleadosDesdeNube() {
+    const { data, error } = await sb.from("empleados").select("*").order("name");
+    if (error) return;
+    labeledDescriptors = (data || []).map(e => ({
+      name: e.name,
+      employeeId: e.employee_id,
+      puesto: e.puesto || "",
+      descriptor: new Float32Array(e.descriptor || []),
+      foto: e.foto
+    }));
+    renderTablaEmpleados();
+  }
+
+  async function refrescarRegistrosDesdeNube() {
+    const { data, error } = await sb.from("registros").select("*").order("fecha", { ascending: false });
+    if (error) return;
+    cacheRegistrosCompletos = (data || []).map(mapRegistroFromDB);
+    actualizarFiltrosAnio();
+    aplicarFiltrosYRender();
+  }
+
+  function suscribirRealtime() {
+    // Un solo canal con las 3 tablas (más fiable)
+    const channel = sb.channel("biosync-sync", {
+      config: { broadcast: { self: false }, presence: { key: "" } }
+    });
+
+    channel
+      .on("postgres_changes", { event: "*", schema: "public", table: "empleados" }, async () => {
+        try { await refrescarEmpleadosDesdeNube(); } catch (_) {}
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "registros" }, async () => {
+        try { await refrescarRegistrosDesdeNube(); } catch (_) {}
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "configuraciones" }, async () => {
+        try { await cargarConfiguraciones(); } catch (_) {}
+      })
+      .subscribe((status, err) => {
+        console.log("[BioSync Realtime]", status, err || "");
+        if (status === "SUBSCRIBED") {
+          realtimeListo = true;
+          // Un refresh inicial por si se perdió un evento al conectar
+          refrescarEmpleadosDesdeNube().catch(() => {});
+          refrescarRegistrosDesdeNube().catch(() => {});
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          realtimeListo = false;
+        }
+      });
+
+    // Respaldo: si Realtime no está habilitado en el proyecto, sincroniza cada 12 s
+    // (solo con pestaña visible para no gastar batería)
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => {
+      if (document.hidden) return;
+      refrescarEmpleadosDesdeNube().catch(() => {});
+      refrescarRegistrosDesdeNube().catch(() => {});
+      cargarConfiguraciones().catch(() => {});
+    }, 12000);
+
+    // Al volver a la pestaña, refrescar al instante
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        refrescarEmpleadosDesdeNube().catch(() => {});
+        refrescarRegistrosDesdeNube().catch(() => {});
+      }
     });
   }
 
-  function renderTablaEmpleados() {
+    function renderTablaEmpleados() {
     const tbody = document.querySelector("#tablaEmpleados tbody");
     tbody.innerHTML = "";
     if (labeledDescriptors.length === 0) {
@@ -1529,20 +1778,22 @@
     });
   }
 
-  let cacheRegistrosCompletos = [];
   let registroEditando = null;
   let fotoEntradaNueva = null;
   let fotoSalidaNueva = null;
 
   async function renderTablaRegistros() {
-    if (!db) return;
-    const tx = db.transaction("registros", "readonly");
-    const req = tx.objectStore("registros").getAll();
-    req.onsuccess = () => {
-      cacheRegistrosCompletos = req.result || [];
+    try {
+      const { data, error } = await sb.from("registros").select("*").order("fecha", { ascending: false });
+      if (error) throw error;
+      cacheRegistrosCompletos = (data || []).map(mapRegistroFromDB);
       actualizarFiltrosAnio();
       aplicarFiltrosYRender();
-    };
+    } catch (e) {
+      console.error("Error cargando registros:", e);
+      cacheRegistrosCompletos = [];
+      aplicarFiltrosYRender();
+    }
   }
 
   function actualizarFiltrosAnio() {
@@ -1623,18 +1874,23 @@
 
     const porAnio = {};
     registros.forEach(r => {
-      const d = new Date(r.hora);
+      const baseHora = (r.entrada && r.entrada.hora) || (r.salida && r.salida.hora) || r.hora;
+      if (!baseHora) return;
+      const d = new Date(baseHora);
       const anio = d.getFullYear();
       const diaKey = d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       if (!porAnio[anio]) porAnio[anio] = {};
       if (!porAnio[anio][diaKey]) porAnio[anio][diaKey] = {};
       const empId = getRegEmployeeId(r);
       const empKey = empId + "|" + r.name;
-      if (!porAnio[anio][diaKey][empKey]) {
-        porAnio[anio][diaKey][empKey] = { name: r.name, id: empId, entrada: null, salida: null };
-      }
-      if (r.tipo === "ENTRADA") porAnio[anio][diaKey][empKey].entrada = r;
-      if (r.tipo === "SALIDA") porAnio[anio][diaKey][empKey].salida = r;
+      // Una fila DB = una línea (entrada + salida del mismo día)
+      porAnio[anio][diaKey][empKey] = {
+        name: r.name,
+        id: empId,
+        dbId: r.id,
+        entrada: r.entrada || null,
+        salida: r.salida || null
+      };
     });
 
     const ahora = Date.now();
@@ -1698,8 +1954,12 @@
             salidaHTML = `<span class="badge out">${horaS}</span>`;
             fotoS = fotoHTML(emp.salida.foto);
           } else if (emp.entrada) {
+            // Si ya cambió el día (o pasaron HORAS_SIN_REGISTRO) → "Sin registro"
+            const fechaEntrada = fechaLocalISO(emp.entrada.hora);
+            const hoy = hoyISO();
             const horasDesde = (ahora - new Date(emp.entrada.hora).getTime()) / 3600000;
-            salidaHTML = horasDesde >= HORAS_SIN_REGISTRO
+            const diaCerrado = fechaEntrada !== hoy || horasDesde >= HORAS_SIN_REGISTRO;
+            salidaHTML = diaCerrado
               ? '<span style="color:var(--danger);font-weight:600;">Sin registro</span>'
               : '<span style="color:var(--text-muted);">Pendiente</span>';
           }
@@ -1707,8 +1967,9 @@
           const payload = {
             name: emp.name,
             employeeId: emp.id,
-            entradaDbId: emp.entrada ? emp.entrada.id : null,
-            salidaDbId: emp.salida ? emp.salida.id : null,
+            dbId: emp.dbId || (emp.entrada && emp.entrada.id) || (emp.salida && emp.salida.id) || null,
+            entradaDbId: emp.dbId || (emp.entrada && emp.entrada.id) || null,
+            salidaDbId: emp.dbId || (emp.salida && emp.salida.id) || null,
             entrada: emp.entrada ? { hora: emp.entrada.hora, ubicacion: emp.entrada.ubicacion || null, foto: emp.entrada.foto || null } : null,
             salida: emp.salida ? { hora: emp.salida.hora, ubicacion: emp.salida.ubicacion || null, foto: emp.salida.foto || null } : null
           };
@@ -2040,24 +2301,6 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function actualizarRegistroDB(reg) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("registros", "readwrite");
-      const req = tx.objectStore("registros").put(reg);
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error?.message || "Error al actualizar");
-    });
-  }
-
-  function eliminarRegistroPorId(id) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("registros", "readwrite");
-      const req = tx.objectStore("registros").delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error?.message || "Error al eliminar");
-    });
-  }
-
   let empleadoEditando = null;
   let fotoNuevaColaborador = null;
   let fotoEliminadaColaborador = false;
@@ -2184,10 +2427,31 @@
     };
 
     try {
+      // Si cambia el folio: actualizar empleado + cascada en registros (sin borrar historial)
       if (nuevoId !== idOriginal) {
+        // 1) Crear/actualizar con el nuevo ID (mismo descriptor y datos)
+        await guardarEmpleadoDB(empActualizado);
+        // 2) Reasignar TODOS los registros del ID viejo al nuevo (mantiene historial por día)
+        const { error: errReg } = await sb.from("registros")
+          .update({
+            employee_id: String(nuevoId),
+            name: nombre,
+            updated_at: new Date().toISOString()
+          })
+          .eq("employee_id", String(idOriginal));
+        if (errReg) throw new Error(errReg.message || "Error al reasignar asistencias");
+        // 3) Borrar solo la ficha vieja del colaborador (no toca registros)
         await eliminarEmpleadoDB(idOriginal);
+      } else {
+        // Solo nombre/puesto/foto: actualizar ficha y sincronizar nombre en registros
+        await guardarEmpleadoDB(empActualizado);
+        if (nombre !== empleadoEditando.name) {
+          await sb.from("registros")
+            .update({ name: nombre, updated_at: new Date().toISOString() })
+            .eq("employee_id", String(idOriginal));
+        }
       }
-      await guardarEmpleadoDB(empActualizado);
+
       await cargarTodoDB();
 
       cerrarModal('modal-editar-colaborador');
@@ -2195,7 +2459,7 @@
       fotoNuevaColaborador = null;
       fotoEliminadaColaborador = false;
       
-      mostrarToast("Colaborador actualizado correctamente.", "ok", 2500);
+      mostrarToast("Colaborador actualizado. Historial de asistencias conservado.", "ok", 3000);
       
       setTimeout(() => {
         bloquearModulo();
@@ -2241,7 +2505,6 @@
   // 4) EVALUACIÓN DE ACCIONES PARA LA TARJETA DE RECONOCIMIENTO
   // ===================================================================
   async function evaluarAccionesReconocimiento(emp) {
-    if (!db) return;
     if (guardando) return;
     if (!document.getElementById('tab-escaner').classList.contains('active')) {
       const modalAbierto = document.getElementById('modal-reconocimiento').classList.contains('show');
@@ -2252,18 +2515,25 @@
 
     let registros;
     try {
-      registros = await new Promise((res) => {
-        const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
-        req.onsuccess = () => res(req.result || []);
-        req.onerror = () => res([]);
-      });
+      // Usar cache en memoria (sincronizado por realtime) o refetch rápido
+      if (cacheRegistrosCompletos && cacheRegistrosCompletos.length >= 0) {
+        registros = cacheRegistrosCompletos;
+      } else {
+        const { data, error } = await sb.from("registros").select("*");
+        if (error) return;
+        registros = (data || []).map(mapRegistroFromDB);
+      }
     } catch (e) {
       return;
     }
 
     const fecha = hoyISO();
-    const entrada = registros.find(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === emp.employeeId && esMismoDiaLocal(r.hora, fecha));
-    const salida  = registros.find(r => r.tipo === "SALIDA"  && getRegEmployeeId(r) === emp.employeeId && esMismoDiaLocal(r.hora, fecha));
+    const delDia = registros.find(r =>
+      getRegEmployeeId(r) === emp.employeeId &&
+      (r.fecha === fecha || esMismoDiaLocal((r.entrada && r.entrada.hora) || (r.salida && r.salida.hora) || r.hora, fecha))
+    );
+    const entrada = delDia && delDia.entrada ? delDia.entrada : null;
+    const salida  = delDia && delDia.salida  ? delDia.salida  : null;
 
     let puedeEntrada = false;
     let puedeSalida = false;
@@ -2308,47 +2578,95 @@
     requestAnimationFrame(loopDeteccion);
   }
 
+  async function pedirCamaraConFallbacks() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        "Tu navegador no permite cámara (mediaDevices). Usa HTTPS o localhost, y Chrome/Edge/Brave actualizado."
+      );
+    }
+
+    // Intentos de menos a más permisivos (Chrome/Brave a veces rechazan constraints estrictas)
+    const intentos = [
+      { video: { facingMode: { ideal: "user" }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+      { video: { facingMode: "user" }, audio: false },
+      { video: true, audio: false },
+      { video: { facingMode: { ideal: "environment" } }, audio: false }
+    ];
+
+    let ultimoError = null;
+    for (const constraints of intentos) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        return stream;
+      } catch (err) {
+        ultimoError = err;
+        console.warn("getUserMedia falló con", constraints, err && err.name, err && err.message);
+      }
+    }
+
+    const nombre = (ultimoError && ultimoError.name) || "Error";
+    const msg = (ultimoError && ultimoError.message) || "sin detalle";
+    if (nombre === "NotAllowedError" || nombre === "PermissionDeniedError") {
+      throw new Error(
+        "Permiso de cámara denegado. En la barra de direcciones → ícono de candado/cámara → Permitir. " +
+        "En Brave: desactiva escudos para este sitio o permite Cámara en Configuración → Escudos."
+      );
+    }
+    if (nombre === "NotFoundError" || nombre === "DevicesNotFoundError") {
+      throw new Error("No se detectó ninguna cámara conectada.");
+    }
+    if (nombre === "NotReadableError" || nombre === "TrackStartError") {
+      throw new Error("La cámara está en uso por otra aplicación o pestaña. Ciérrala e inténtalo de nuevo.");
+    }
+    if (nombre === "SecurityError") {
+      throw new Error("El navegador bloqueó la cámara por seguridad. Abre la app con HTTPS (no file://).");
+    }
+    throw new Error("No se pudo abrir la cámara (" + nombre + "): " + msg);
+  }
+
   async function encenderCamara(forzar = false) {
-    if (streamGlobal && !forzar) return; 
+    if (streamGlobal && !forzar) return;
 
     try {
       bloqueoCamara.style.display = "none";
       primerCuadroListo = false;
       bucleActivo = false;
-      
+
       if (streamGlobal) {
         streamGlobal.getTracks().forEach(track => track.stop());
         streamGlobal = null;
       }
 
-      streamGlobal = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: "user"
-        } 
-      });
-      
+      // Chrome/Brave: a veces hace falta un gesto del usuario; si auto-arranque falla, se muestra el botón
+      streamGlobal = await pedirCamaraConFallbacks();
+
+      // Asegurar atributos que Chrome exige para autoplay
+      videoScanner.setAttribute("playsinline", "true");
+      videoScanner.setAttribute("muted", "true");
+      videoScanner.muted = true;
+      videoScanner.playsInline = true;
       videoScanner.srcObject = streamGlobal;
       videoRegistro.srcObject = null;
 
       await new Promise((resolve) => {
-        if (videoScanner.readyState >= 2) {
-          resolve();
-        } else {
-          videoScanner.onloadedmetadata = () => resolve();
-        }
+        if (videoScanner.readyState >= 2) resolve();
+        else videoScanner.onloadedmetadata = () => resolve();
       });
 
-      await videoScanner.play().catch(() => {});
+      try {
+        await videoScanner.play();
+      } catch (playErr) {
+        console.warn("video.play() bloqueado:", playErr);
+        // Seguir: el stream ya está asignado; el usuario puede interactuar
+      }
 
       listo = true;
       btnTomarFoto.disabled = false;
       statusRegistro.className = "ok";
       statusRegistro.textContent = "Cámara lista. Toma la primera foto.";
-      
+
       mostrarToast("Acérquese a la cámara para registrar su asistencia.", "info", 3000);
-      
+
       setTimeout(() => {
         primerCuadroListo = true;
         iniciarEscaneo();
@@ -2357,33 +2675,30 @@
     } catch (e) {
       console.error("Error cámara:", e);
       statusRegistro.className = "err";
-      statusRegistro.textContent = "Error de cámara: " + e.message;
-      mostrarToast("Error de cámara: " + e.message, "error", 5000);
-      
-      if (!forzar && localStorage.getItem("autoCamara") !== "false") {
-        bloqueoCamara.style.display = "block";
-      }
+      statusRegistro.textContent = "Error de cámara: " + (e.message || e);
+      mostrarToast(e.message || String(e), "error", 7000);
+      // Siempre mostrar botón manual en Chrome/Brave si falla
+      bloqueoCamara.style.display = "block";
     }
   }
 
   async function init() {
     try {
-      await initDB();
+      await cargarConfiguraciones();
       await cargarTodoDB();
+      suscribirRealtime();
 
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
       await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
 
-      const autoCam = localStorage.getItem("autoCamara") !== "false";
-      if (autoCam) {
+      if (AUTO_CAMARA) {
         setTimeout(() => {
           encenderCamara(true);
         }, 600);
       }
 
-      const autoUbi = localStorage.getItem("autoUbicacion") !== "false";
-      if (autoUbi) {
+      if (AUTO_UBICACION) {
         setTimeout(() => solicitarPermisoUbicacion(), 1200);
       }
       
@@ -2431,7 +2746,10 @@
         if (detections.length > 0 && labeledDescriptors.length > 0) {
           const det = await faceapi.detectSingleFace(videoScanner, options).withFaceLandmarks().withFaceDescriptor();
           if (det) {
-            const labeled = labeledDescriptors.map(e => new faceapi.LabeledFaceDescriptors(e.name, [e.descriptor]));
+            // Label = employeeId (estable aunque cambie nombre/foto)
+            const labeled = labeledDescriptors.map(e =>
+              new faceapi.LabeledFaceDescriptors(String(e.employeeId), [e.descriptor])
+            );
             const matcher = new faceapi.FaceMatcher(labeled, THRESHOLD);
             const match = matcher.findBestMatch(det.descriptor);
 
@@ -2439,24 +2757,26 @@
               rostroReconocido = true;
               tiempoSinReconocer = 0;
               
-              const emp = labeledDescriptors.find(e => e.name === match.label);
-              const cambioEmpleado = !rostroActual || rostroActual.employeeId !== emp.employeeId;
+              const emp = labeledDescriptors.find(e => String(e.employeeId) === String(match.label));
+              if (emp) {
+                const cambioEmpleado = !rostroActual || String(rostroActual.employeeId) !== String(emp.employeeId);
 
-              if (cambioEmpleado) {
-                rostroActual = emp;
-                videoScanner.style.borderColor = "var(--success)";
-                userInfo.style.display = "block";
-                userInfo.textContent = `✅ ${emp.name} (#${emp.employeeId})`;
-                accionesAsistencia.style.display = "flex";
-                ultimaClaveAcciones = "";
-                ultimaEvaluacionModal = 0;
-              }
-              btnEntrada.disabled = false;
-              btnSalida.disabled = false;
+                if (cambioEmpleado) {
+                  rostroActual = emp;
+                  videoScanner.style.borderColor = "var(--success)";
+                  userInfo.style.display = "block";
+                  userInfo.textContent = `✅ ${emp.name} (#${emp.employeeId})`;
+                  accionesAsistencia.style.display = "flex";
+                  ultimaClaveAcciones = "";
+                  ultimaEvaluacionModal = 0;
+                }
+                btnEntrada.disabled = false;
+                btnSalida.disabled = false;
 
-              if (ahora - ultimaEvaluacionModal > 2500) {
-                ultimaEvaluacionModal = ahora;
-                evaluarAccionesReconocimiento(emp);
+                if (ahora - ultimaEvaluacionModal > 2500) {
+                  ultimaEvaluacionModal = ahora;
+                  evaluarAccionesReconocimiento(emp);
+                }
               }
             }
           }
@@ -2659,21 +2979,30 @@
 
   function solicitarPermisoUbicacion() {
     if (!navigator.geolocation) return;
+    // Pide permiso sin bloquear; acepta posición cacheada reciente
     navigator.geolocation.getCurrentPosition(
       () => {},
       () => {},
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 }
     );
   }
 
   function obtenerUbicacion() {
     return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject("GPS no soportado");
+      if (!navigator.geolocation) {
+        return reject("Este dispositivo o navegador no soporta GPS.");
+      }
 
-      const options = {
+      // Opciones: alta precisión, timeout generoso, permite cache de hasta 30 s
+      const optionsAlta = {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
+        timeout: 20000,
+        maximumAge: 30000
+      };
+      const optionsRapida = {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000
       };
 
       let mejorLectura = null;
@@ -2683,68 +3012,99 @@
       const finalizar = (resultado) => {
         if (terminado) return;
         terminado = true;
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        if (watchId !== null) {
+          try { navigator.geolocation.clearWatch(watchId); } catch (_) {}
+        }
         resolve(resultado);
       };
 
       const fallar = (msg) => {
         if (terminado) return;
         terminado = true;
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        if (watchId !== null) {
+          try { navigator.geolocation.clearWatch(watchId); } catch (_) {}
+        }
         reject(msg);
       };
 
-      const toastGPS = mostrarToast("Obteniendo ubicación GPS de alta precisión...", "info", 6000);
+      const toastGPS = mostrarToast("Obteniendo ubicación GPS...", "info", 15000);
 
-      watchId = navigator.geolocation.watchPosition(
-        (p) => {
-          const accuracy = p.coords.accuracy || 999;
-          const lectura = {
-            lat: p.coords.latitude,
-            lng: p.coords.longitude,
-            precision: accuracy
-          };
-
-          if (!mejorLectura || accuracy < mejorLectura.precision) {
-            mejorLectura = lectura;
-            if (toastGPS && toastGPS.querySelector(".toast-text")) {
-              toastGPS.querySelector(".toast-text").textContent = `Mejorando precisión GPS... (±${Math.round(accuracy)} m)`;
-            }
+      const aplicarLectura = (p) => {
+        if (!p || !p.coords) return;
+        const accuracy = p.coords.accuracy || 999;
+        const lectura = {
+          lat: p.coords.latitude,
+          lng: p.coords.longitude,
+          precision: accuracy
+        };
+        if (!mejorLectura || accuracy < mejorLectura.precision) {
+          mejorLectura = lectura;
+          if (toastGPS && toastGPS.querySelector(".toast-text")) {
+            toastGPS.querySelector(".toast-text").textContent =
+              `Mejorando precisión GPS... (±${Math.round(accuracy)} m)`;
           }
+        }
+        // Aceptar si precisión razonable
+        if (accuracy <= 80) {
+          if (toastGPS) toastGPS.remove();
+          finalizar(mejorLectura);
+        }
+      };
 
-          if (accuracy <= 50) {
-            if (toastGPS) toastGPS.remove();
-            finalizar(mejorLectura);
-          }
-        },
-        (e) => {
-          navigator.geolocation.getCurrentPosition(
-            (p) => {
-              if (toastGPS) toastGPS.remove();
-              finalizar({
-                lat: p.coords.latitude,
-                lng: p.coords.longitude,
-                precision: p.coords.accuracy || 999
-              });
-            },
-            () => {
-              if (toastGPS) toastGPS.remove();
-              fallar("Error de GPS: " + e.message);
-            },
-            options
-          );
-        },
-        options
+      // 1) Intentos paralelos: getCurrentPosition (rápido + alta precisión)
+      navigator.geolocation.getCurrentPosition(
+        (p) => aplicarLectura(p),
+        () => {},
+        optionsRapida
+      );
+      navigator.geolocation.getCurrentPosition(
+        (p) => aplicarLectura(p),
+        () => {},
+        optionsAlta
       );
 
+      // 2) watchPosition para seguir mejorando
+      try {
+        watchId = navigator.geolocation.watchPosition(
+          (p) => aplicarLectura(p),
+          (e) => {
+            // Solo fallar si no tenemos ninguna lectura y es denegación de permiso
+            if (e && e.code === 1 /* PERMISSION_DENIED */) {
+              if (toastGPS) toastGPS.remove();
+              fallar("Permiso de ubicación denegado. Activa la ubicación en el navegador y vuelve a intentar.");
+            }
+          },
+          optionsAlta
+        );
+      } catch (err) {
+        // Continuar con los getCurrentPosition
+      }
+
+      // 3) A los 8 s: si ya hay alguna lectura, úsala aunque no sea perfecta
       setTimeout(() => {
+        if (terminado) return;
+        if (mejorLectura) {
+          if (toastGPS) toastGPS.remove();
+          finalizar(mejorLectura);
+        }
+      }, 8000);
+
+      // 4) A los 18 s: último recurso
+      setTimeout(() => {
+        if (terminado) return;
         if (toastGPS) toastGPS.remove();
         if (mejorLectura) {
           finalizar(mejorLectura);
         } else {
-          fallar("No se pudo obtener una ubicación precisa. Asegúrate de tener el GPS activado.");
+          fallar(
+            "No se pudo obtener la ubicación GPS.\n" +
+            "• Activa el GPS del dispositivo\n" +
+            "• Concede permiso de ubicación a este sitio\n" +
+            "• Si usas Wi‑Fi, acércate a una ventana o sal al exterior\n" +
+            "• Recarga la página e inténtalo de nuevo"
+          );
         }
-      }, 6000);
+      }, 18000);
     });
   }
 
@@ -2786,16 +3146,8 @@
       const foto = capturarFoto(videoScanner);
       const fecha = hoyISO();
       
-      const registros = await new Promise(res => {
-        const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
-        req.onsuccess = () => res(req.result);
-      });
-
-      const yaEntro = registros.some(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
-      if (yaEntro) throw new Error("Ya registraste entrada hoy.");
-
-      const nuevoReg = { tipo: "ENTRADA", employeeId: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
-      await guardarRegistroDB(nuevoReg);
+      const horaISO = new Date().toISOString();
+      await registrarEntradaDB(empTemp, horaISO, foto, ubicacion);
       await renderTablaRegistros();
       
       mostrarToast(`Entrada registrada para ${empTemp.name}`, "ok", 4000);
@@ -2817,18 +3169,21 @@
 
     try {
       const fecha = hoyISO();
-      const registros = await new Promise(res => {
-        const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
-        req.onsuccess = () => res(req.result);
-      });
-      
-      const entrada = registros.find(r => r.tipo === "ENTRADA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
-      if (!entrada) throw new Error("No hay entrada registrada hoy.");
-      
-      const yaSalio = registros.some(r => r.tipo === "SALIDA" && getRegEmployeeId(r) === empTemp.employeeId && esMismoDiaLocal(r.hora, fecha));
-      if (yaSalio) throw new Error("Ya registraste salida hoy.");
+      // Validar tiempo mínimo con el registro del día en caché/nube
+      let registros = cacheRegistrosCompletos || [];
+      if (!registros.length) {
+        const { data, error } = await sb.from("registros").select("*");
+        if (error) throw error;
+        registros = (data || []).map(mapRegistroFromDB);
+      }
+      const delDia = registros.find(r =>
+        getRegEmployeeId(r) === empTemp.employeeId &&
+        (r.fecha === fecha || esMismoDiaLocal((r.entrada && r.entrada.hora) || r.hora, fecha))
+      );
+      if (!delDia || !delDia.entrada) throw new Error("No hay entrada registrada hoy.");
+      if (delDia.salida) throw new Error("Ya registraste salida hoy.");
 
-      const diffHoras = (Date.now() - new Date(entrada.hora).getTime()) / 3600000;
+      const diffHoras = (Date.now() - new Date(delDia.entrada.hora).getTime()) / 3600000;
       if (diffHoras < HORAS_REQUERIDAS) {
         const faltan = HORAS_REQUERIDAS - diffHoras;
         const horas = Math.floor(faltan);
@@ -2843,9 +3198,8 @@
 
       const ubicacion = await validarUbicacion();
       const foto = capturarFoto(videoScanner);
-      
-      const nuevoReg = { tipo: "SALIDA", employeeId: empTemp.employeeId, name: empTemp.name, hora: new Date().toISOString(), foto, ubicacion };
-      await guardarRegistroDB(nuevoReg);
+      const horaISO = new Date().toISOString();
+      await registrarSalidaDB(empTemp, horaISO, foto, ubicacion);
       await renderTablaRegistros();
       
       mostrarToast(`Salida registrada para ${empTemp.name}`, "ok", 4000);
@@ -2858,25 +3212,36 @@
     }
   });
 
-  document.getElementById("btnExportarCSV").addEventListener("click", () => {
-    const req = db.transaction("registros", "readonly").objectStore("registros").getAll();
-    req.onsuccess = () => {
-      const registros = req.result;
+  document.getElementById("btnExportarCSV").addEventListener("click", async () => {
+    try {
+      let registros = cacheRegistrosCompletos || [];
+      if (!registros.length) {
+        const { data, error } = await sb.from("registros").select("*").order("fecha", { ascending: false });
+        if (error) throw error;
+        registros = (data || []).map(mapRegistroFromDB);
+      }
       if (registros.length === 0) return alert("No hay registros.");
-      let csvContent = "Empleado,ID,Tipo,Fecha y Hora,Latitud,Longitud,Link Google Maps\n";
+      let csvContent = "Empleado,ID,Fecha,Hora Entrada,Hora Salida,Lat Entrada,Lng Entrada,Maps Entrada,Lat Salida,Lng Salida,Maps Salida\n";
       registros.forEach(r => {
-        const fecha = new Date(r.hora).toLocaleString();
-        const lat = r.ubicacion ? r.ubicacion.lat : "";
-        const lng = r.ubicacion ? r.ubicacion.lng : "";
-        const mapsLink = (lat && lng) ? `https://www.google.com/maps?q=${lat},${lng}` : "";
-        csvContent += `"${r.name}","${getRegEmployeeId(r)}","${r.tipo}","${fecha}","${lat}","${lng}","${mapsLink}"\n`;
+        const fecha = r.fecha || (r.entrada ? fechaLocalISO(r.entrada.hora) : (r.salida ? fechaLocalISO(r.salida.hora) : ""));
+        const horaE = r.entrada ? new Date(r.entrada.hora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : "Sin registro";
+        const horaS = r.salida ? new Date(r.salida.hora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : "Sin registro";
+        const latE = r.entrada && r.entrada.ubicacion ? r.entrada.ubicacion.lat : "";
+        const lngE = r.entrada && r.entrada.ubicacion ? r.entrada.ubicacion.lng : "";
+        const latS = r.salida && r.salida.ubicacion ? r.salida.ubicacion.lat : "";
+        const lngS = r.salida && r.salida.ubicacion ? r.salida.ubicacion.lng : "";
+        const mapsE = (latE && lngE) ? `https://www.google.com/maps?q=${latE},${lngE}` : "";
+        const mapsS = (latS && lngS) ? `https://www.google.com/maps?q=${latS},${lngS}` : "";
+        csvContent += `"${r.name}","${getRegEmployeeId(r)}","${fecha}","${horaE}","${horaS}","${latE}","${lngE}","${mapsE}","${latS}","${lngS}","${mapsS}"\n`;
       });
       const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `historial_asistencias_${hoyISO()}.csv`;
       link.click();
-    };
+    } catch (e) {
+      alert("Error al exportar: " + (e.message || e));
+    }
   });
 
   init();
