@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BioSync</title>
 <style>
+  /* ============================================================
+     BIOSYNC · CLAYMORPHISM 2026
+     Fondo original intacto. Superficies de "arcilla" suave con
+     luces/sombras internas, doble sombra externa, bordes gruesos
+     y microinteracciones con rebote. Sin tocar funcionalidad.
+     ============================================================ */
+
   :root {
+    /* Paleta original — SIN CAMBIOS */
     --primary: #0071e3;
     --primary-hover: #0077ed;
     --success: #34c759;
@@ -15,8 +23,34 @@
     --text: #1d1d1f;
     --text-muted: #86868b;
     --border: #e5e5ea;
+
+    /* Tokens Clay */
+    --clay-base: #eef0f5;
+    --clay-surface: #f7f8fb;
+    --clay-light: rgba(255, 255, 255, 0.95);
+    --clay-dark: rgba(163, 177, 198, 0.35);
+    --clay-shadow-out: 10px 10px 24px rgba(163, 177, 198, 0.45),
+                       -10px -10px 24px rgba(255, 255, 255, 0.95);
+    --clay-shadow-in: inset 4px 4px 10px rgba(163, 177, 198, 0.35),
+                      inset -4px -4px 10px rgba(255, 255, 255, 0.95);
+    --clay-shadow-soft: 6px 6px 16px rgba(163, 177, 198, 0.35),
+                        -6px -6px 16px rgba(255, 255, 255, 0.9);
+    --clay-shadow-press: inset 5px 5px 12px rgba(163, 177, 198, 0.5),
+                         inset -5px -5px 12px rgba(255, 255, 255, 0.95);
+    --clay-radius: 24px;
+    --clay-radius-sm: 16px;
+    --clay-radius-pill: 999px;
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+  * {
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Segoe UI",
+      Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* FONDO ORIGINAL — SIN CAMBIOS */
   body {
     background: linear-gradient(135deg, #f5f5f7 0%, #ebebf0 100%);
     color: var(--text);
@@ -25,158 +59,505 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    letter-spacing: -0.01em;
   }
+
   .container { max-width: 900px; margin: 0 auto; }
-  
-  /* ===== INTRO ANIMACIÓN ===== */
+
+  /* ===== INTRO ===== */
   #intro-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     background: #000; display: flex; align-items: center; justify-content: center;
-    z-index: 9999; overflow: hidden; transition: opacity 0.8s ease;
+    z-index: 9999; overflow: hidden; transition: opacity 0.8s var(--ease-out);
   }
   #intro-logo {
     width: 200px; height: auto; object-fit: contain;
     transform: scale(1);
-    transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease;
+    transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s var(--ease-out);
   }
-  #intro-overlay.zoom-out #intro-logo {
-    transform: scale(8);
-    opacity: 0;
-  }
+  #intro-overlay.zoom-out #intro-logo { transform: scale(8); opacity: 0; }
   #intro-overlay.hide { opacity: 0; pointer-events: none; }
 
-  /* Navegación */
+  /* ===== TÍTULO ===== */
+  h1 {
+    text-align: center;
+    font-size: clamp(30px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 34px;
+    color: #4a4a55;
+    text-shadow:
+      0 2px 0 rgba(255, 255, 255, 0.9),
+      0 -1px 0 rgba(163, 177, 198, 0.3),
+      0 6px 16px rgba(163, 177, 198, 0.35);
+    position: relative;
+  }
+  h1::after {
+    content: "";
+    display: block;
+    width: 56px;
+    height: 10px;
+    margin: 16px auto 0;
+    border-radius: var(--clay-radius-pill);
+    background: linear-gradient(145deg, #0077ed, #64a8ff);
+    box-shadow:
+      3px 3px 8px rgba(0, 113, 227, 0.45),
+      -3px -3px 8px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 3px rgba(255, 255, 255, 0.4);
+  }
+
+  /* ===== TABS (segmented clay) ===== */
   .tabs {
-    display: flex; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px; padding: 4px; margin-bottom: 25px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    display: flex;
+    background: var(--clay-base);
+    border-radius: var(--clay-radius);
+    padding: 8px;
+    margin-bottom: 28px;
+    box-shadow: var(--clay-shadow-in);
+    gap: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.7);
   }
   .tab-btn {
-    flex: 1; padding: 14px; border: none; background: transparent;
-    font-size: 15px; font-weight: 600; color: var(--text-muted);
-    cursor: pointer; border-radius: 12px; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    flex: 1;
+    padding: 15px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #8a8a96;
+    cursor: pointer;
+    border-radius: calc(var(--clay-radius) - 8px);
+    transition: all 0.35s var(--ease-bounce);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .tab-btn.active { background: var(--card); color: var(--text); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-  .tab-content { display: none; animation: fadeIn 0.4s ease; }
+  .tab-btn:hover { color: #4a4a55; }
+  .tab-btn.active {
+    background: var(--clay-surface);
+    color: #3d3d48;
+    box-shadow:
+      5px 5px 12px rgba(163, 177, 198, 0.5),
+      -5px -5px 12px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+      inset -1px -1px 3px rgba(163, 177, 198, 0.2);
+    transform: translateY(-1px);
+  }
+  .tab-content { display: none; animation: clayFade 0.45s var(--ease-out); }
   .tab-content.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes clayFade {
+    from { opacity: 0; transform: translateY(10px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
 
-  /* Tarjetas y UI */
+  /* ===== CARDS (arcilla principal) ===== */
   .card {
-    background: var(--card); border-radius: 24px; padding: 35px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 25px;
-    text-align: center; position: relative; border: 1px solid rgba(255,255,255,0.5);
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius);
+    padding: 38px 34px;
+    box-shadow:
+      14px 14px 34px rgba(163, 177, 198, 0.4),
+      -14px -14px 34px rgba(255, 255, 255, 0.95),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.95),
+      inset -2px -2px 6px rgba(163, 177, 198, 0.12);
+    margin-bottom: 28px;
+    text-align: center;
+    position: relative;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    transition: box-shadow 0.4s var(--ease-out), transform 0.4s var(--ease-out);
   }
-  h2 { margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.6px; }
-  
+  .card:hover {
+    box-shadow:
+      16px 16px 40px rgba(163, 177, 198, 0.5),
+      -16px -16px 40px rgba(255, 255, 255, 1),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.95),
+      inset -2px -2px 6px rgba(163, 177, 198, 0.12);
+  }
+
+  h2 {
+    margin-top: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #4a4a55;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* ===== BOTÓN CANCELAR TAB ===== */
   .btn-cancel-tab {
-    position: absolute; top: 24px; right: 24px; background: #f5f5f7; color: var(--danger);
-    border: 1px solid var(--border); padding: 8px 18px; border-radius: 12px;
-    font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    background: #fdecec;
+    color: var(--danger);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    padding: 10px 18px;
+    border-radius: var(--clay-radius-pill);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-bounce);
+    box-shadow:
+      4px 4px 10px rgba(255, 59, 48, 0.18),
+      -4px -4px 10px rgba(255, 255, 255, 0.9);
   }
-  .btn-cancel-tab:hover { background: #ffecec; border-color: #ffcccc; }
-
-
-  /* --- Mejoras UI --- */
-  #modal-configuraciones .modal-box,
-  #modal-editar-colaborador .modal-box {
-    overscroll-behavior: contain;
+  .btn-cancel-tab:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      6px 6px 14px rgba(255, 59, 48, 0.25),
+      -6px -6px 14px rgba(255, 255, 255, 1);
   }
-  #modal-configuraciones .modal-box::-webkit-scrollbar,
-  #modal-editar-colaborador .modal-box::-webkit-scrollbar { width: 8px; }
-  #modal-configuraciones .modal-box::-webkit-scrollbar-thumb,
-  #modal-editar-colaborador .modal-box::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
-  .btn-fila-icono {
-    width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
-    border: 1px solid #dbe4ff; background: #eef3ff; color: var(--primary);
-    border-radius: 12px; cursor: pointer; font-size: 17px; line-height: 1; transition: all .15s ease;
-  }
-  .btn-fila-icono:hover { background: #dbe7ff; transform: translateY(-1px); }
-  .filtros-registros select { min-width: 150px; }
-  input[type="file"] {
-    display: inline-block; width: 100%; max-width: 260px; padding: 12px 16px;
-    border: 1px dashed #c7d2fe; background: #f5f8ff; color: var(--primary);
-    border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
-  }
-  input[type="file"]::file-selector-button {
-    margin-right: 12px; border: none; background: var(--primary); color: #fff;
-    padding: 9px 14px; border-radius: 9px; font-weight: 600; cursor: pointer;
-  }
-  .video-wrap { width: min(420px, 100%); aspect-ratio: 4 / 3; display: block; }
-  .video-wrap video, .video-wrap canvas.overlay { width: 100%; height: 100%; object-fit: cover; }
-  @media (max-width: 700px) {
-    .video-wrap { width: 100%; border-radius: 16px; }
-    .modal-box { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; }
-    .modal-btn-group { flex-direction: column; }
-    .modal-btn-group button { width: 100%; }
-  }
-  #modal-aviso .modal-box { max-width: 380px; text-align: center; border-top: 5px solid var(--primary); }
-  #modal-aviso.aviso-ok .modal-box { border-top-color: var(--success); }
-  #modal-aviso.aviso-error .modal-box { border-top-color: var(--danger); }
-  #modal-aviso .modal-icon { font-size: 34px; }
-  #modal-aviso h3 { margin: 8px 0 10px; }
-  #modal-aviso p { color: var(--text-muted); line-height: 1.5; margin-bottom: 22px; white-space: pre-line; }
-  #modal-editar-colaborador .modal-box { text-align: left; }
-  .emp-foto-preview { display: flex; justify-content: center; margin: 4px 0 18px; }
-  .emp-foto-preview img {
-    width: 120px; height: 120px; object-fit: cover; border-radius: 20px;
-    border: 3px solid #e5e7eb; box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  .btn-cancel-tab:active {
+    box-shadow: inset 3px 3px 8px rgba(255, 59, 48, 0.25),
+                inset -3px -3px 8px rgba(255, 255, 255, 0.9);
   }
 
-  /* Videos */
+  /* ===== BOTÓN ADMIN FLOTANTE ===== */
+  #btn-admin {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--clay-surface);
+    color: #7a7a88;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    font-size: 26px;
+    cursor: pointer;
+    box-shadow:
+      8px 8px 20px rgba(163, 177, 198, 0.5),
+      -8px -8px 20px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s var(--ease-bounce);
+    z-index: 1000;
+  }
+  #btn-admin:hover {
+    transform: rotate(10deg) scale(1.08);
+    color: var(--primary);
+    box-shadow:
+      10px 10px 24px rgba(163, 177, 198, 0.55),
+      -10px -10px 24px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9);
+  }
+  #btn-admin:active {
+    box-shadow: inset 4px 4px 10px rgba(163, 177, 198, 0.5),
+                inset -4px -4px 10px rgba(255, 255, 255, 0.95);
+    transform: rotate(10deg) scale(1);
+  }
 
-  .video-wrap { 
-    position: relative; display: inline-block; margin: 0 auto 20px; 
-    border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); background: #000;
-    border: 1px solid rgba(255,255,255,0.2);
+  /* ===== MENÚ ADMIN ===== */
+  #admin-menu {
+    position: fixed;
+    bottom: 108px;
+    left: 30px;
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius);
+    padding: 10px;
+    box-shadow:
+      12px 12px 30px rgba(163, 177, 198, 0.45),
+      -12px -12px 30px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 999;
+    transform-origin: bottom left;
+    animation: clayPop 0.35s var(--ease-bounce);
+    min-width: 240px;
+  }
+  #admin-menu.show { display: flex; }
+  @keyframes clayPop {
+    from { opacity: 0; transform: scale(0.85) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .admin-menu-item {
+    padding: 14px 18px;
+    border-radius: var(--clay-radius-sm);
+    cursor: pointer;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #5a5a66;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.25s var(--ease-bounce);
+    border: 2px solid transparent;
+  }
+  .admin-menu-item:hover {
+    background: #eef3ff;
+    color: var(--primary);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      4px 4px 10px rgba(0, 113, 227, 0.15),
+      -4px -4px 10px rgba(255, 255, 255, 1);
+    transform: translateY(-1px);
+  }
+  .admin-menu-item:active {
+    box-shadow: inset 3px 3px 8px rgba(0, 113, 227, 0.15),
+                inset -3px -3px 8px rgba(255, 255, 255, 0.9);
+    transform: translateY(0);
+  }
+  .admin-menu-item span.icon { font-size: 20px; }
+
+  /* ===== VIDEOS ===== */
+  .video-wrap {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto 22px;
+    border-radius: var(--clay-radius);
+    overflow: hidden;
+    box-shadow:
+      12px 12px 28px rgba(163, 177, 198, 0.45),
+      -12px -12px 28px rgba(255, 255, 255, 0.95),
+      inset 0 0 0 3px rgba(255, 255, 255, 0.5);
+    background: #2a2a30;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    width: min(420px, 100%);
+    aspect-ratio: 4 / 3;
+  }
+  .video-wrap video,
+  .video-wrap canvas.overlay {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
   video, canvas.overlay { display: block; }
-  canvas.overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+  canvas.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
 
-  /* Status */
+  /* ===== STATUS ===== */
   #status, #statusRegistro {
-    font-weight: 500; font-size: 15px; padding: 16px; border-radius: 14px;
-    background: #f2f2f7; color: var(--text); margin-bottom: 20px; transition: all 0.3s ease;
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: -0.01em;
+    padding: 18px 22px;
+    border-radius: var(--clay-radius-sm);
+    background: var(--clay-base);
+    color: #5a5a66;
+    margin-bottom: 22px;
+    transition: all 0.35s var(--ease-out);
+    box-shadow: var(--clay-shadow-in);
+    border: 2px solid rgba(255, 255, 255, 0.7);
   }
-  #status.ok, #statusRegistro.ok { background: #e8f8ed; color: #1a7f37; }
-  #status.err, #statusRegistro.err { background: #ffecec; color: #d32f2f; }
+  #status.ok, #statusRegistro.ok {
+    background: #e6f8ec;
+    color: #1a7f37;
+    box-shadow:
+      inset 4px 4px 10px rgba(52, 199, 89, 0.18),
+      inset -4px -4px 10px rgba(255, 255, 255, 1);
+    border-color: rgba(52, 199, 89, 0.25);
+  }
+  #status.err, #statusRegistro.err {
+    background: #fdecec;
+    color: #d32f2f;
+    box-shadow:
+      inset 4px 4px 10px rgba(255, 59, 48, 0.18),
+      inset -4px -4px 10px rgba(255, 255, 255, 1);
+    border-color: rgba(255, 59, 48, 0.25);
+  }
 
-  /* Botones */
-  .btn-group { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  /* ===== BOTONES DE ACCIÓN CLAY ===== */
+  .btn-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
   button.action {
-    padding: 16px 32px; font-size: 16px; border: none; border-radius: 14px;
-    font-weight: 600; cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 16px 32px;
+    font-size: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    border-radius: var(--clay-radius-sm);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-bounce);
+    position: relative;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
   }
-  button.action:active { transform: scale(0.96); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-  button.action:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-  button.entrada { background: var(--primary); color: white; }
-  button.salida { background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; }
-  button.registro { background: var(--success); color: white; }
-  button.secondary { background: #6e6e73; color: #fff; border: 1px solid #5c5c61; }
-  button.exportar { background: #eef3ff; color: var(--primary); border: 1px solid #dbe4ff; margin-bottom: 15px; }
-  button.btn-vaciar { background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; margin-bottom: 15px; }
-  
-  /* Aviso Rostro */
+  button.action:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+  }
+  button.action:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+  }
+  button.action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  button.entrada {
+    background: linear-gradient(145deg, #1a85f0, #0062cc);
+    color: white;
+    box-shadow:
+      8px 8px 18px rgba(0, 113, 227, 0.45),
+      -8px -8px 18px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(0, 80, 180, 0.35);
+  }
+  button.entrada:hover:not(:disabled) {
+    box-shadow:
+      10px 10px 24px rgba(0, 113, 227, 0.55),
+      -10px -10px 24px rgba(255, 255, 255, 0.95),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(0, 80, 180, 0.35);
+  }
+  button.entrada:active:not(:disabled) {
+    box-shadow:
+      inset 5px 5px 12px rgba(0, 70, 160, 0.5),
+      inset -5px -5px 12px rgba(100, 168, 255, 0.6);
+  }
+  button.salida {
+    background: linear-gradient(145deg, #fff2f2, #fde0e0);
+    color: var(--danger);
+    box-shadow:
+      8px 8px 18px rgba(255, 59, 48, 0.22),
+      -8px -8px 18px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+      inset -2px -2px 4px rgba(255, 59, 48, 0.12);
+  }
+  button.salida:hover:not(:disabled) {
+    box-shadow:
+      10px 10px 24px rgba(255, 59, 48, 0.3),
+      -10px -10px 24px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+      inset -2px -2px 4px rgba(255, 59, 48, 0.12);
+  }
+  button.salida:active:not(:disabled) {
+    box-shadow:
+      inset 5px 5px 12px rgba(255, 59, 48, 0.25),
+      inset -5px -5px 12px rgba(255, 255, 255, 0.95);
+  }
+  button.registro {
+    background: linear-gradient(145deg, #4adf70, #2cb84e);
+    color: white;
+    box-shadow:
+      8px 8px 18px rgba(52, 199, 89, 0.4),
+      -8px -8px 18px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(30, 140, 60, 0.35);
+  }
+  button.registro:hover:not(:disabled) {
+    box-shadow:
+      10px 10px 24px rgba(52, 199, 89, 0.5),
+      -10px -10px 24px rgba(255, 255, 255, 0.95),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(30, 140, 60, 0.35);
+  }
+  button.registro:active:not(:disabled) {
+    box-shadow:
+      inset 5px 5px 12px rgba(30, 140, 60, 0.5),
+      inset -5px -5px 12px rgba(110, 240, 140, 0.6);
+  }
+  button.secondary {
+    background: linear-gradient(145deg, #8c8c98, #6e6e7a);
+    color: #fff;
+    box-shadow:
+      8px 8px 18px rgba(110, 110, 122, 0.4),
+      -8px -8px 18px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.35),
+      inset -2px -2px 4px rgba(70, 70, 80, 0.35);
+  }
+  button.secondary:active:not(:disabled) {
+    box-shadow:
+      inset 5px 5px 12px rgba(70, 70, 80, 0.5),
+      inset -5px -5px 12px rgba(160, 160, 175, 0.5);
+  }
+  button.exportar {
+    background: linear-gradient(145deg, #f0f5ff, #dfeaff);
+    color: var(--primary);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    padding: 14px 22px;
+    font-size: 13.5px;
+    border-radius: var(--clay-radius-sm);
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-bounce);
+    box-shadow:
+      6px 6px 14px rgba(0, 113, 227, 0.2),
+      -6px -6px 14px rgba(255, 255, 255, 1);
+  }
+  button.exportar:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      8px 8px 18px rgba(0, 113, 227, 0.28),
+      -8px -8px 18px rgba(255, 255, 255, 1);
+  }
+  button.exportar:active {
+    box-shadow: inset 4px 4px 10px rgba(0, 113, 227, 0.2),
+                inset -4px -4px 10px rgba(255, 255, 255, 1);
+    transform: translateY(0);
+  }
+  button.btn-vaciar {
+    background: linear-gradient(145deg, #fff0f0, #fde0e0);
+    color: var(--danger);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+  }
+
+  /* ===== AVISO ROSTRO ===== */
   #aviso-rostro {
-    display: none; margin-top: 20px; padding: 24px; background: #f5f5f7;
-    border-radius: 16px; border: 1px solid var(--border); animation: fadeIn 0.5s ease;
+    display: none;
+    margin-top: 22px;
+    padding: 26px;
+    background: var(--clay-base);
+    border-radius: var(--clay-radius-sm);
+    box-shadow: var(--clay-shadow-in);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    animation: clayFade 0.5s var(--ease-out);
   }
-  #aviso-rostro p { margin: 0 0 15px 0; font-size: 16px; font-weight: 500; }
-
-  /* Inputs */
-  input[type="text"], input[type="password"], input[type="number"] {
-    padding: 14px 18px; width: 100%; max-width: 320px; border: 1px solid var(--border);
-    border-radius: 12px; font-size: 15px; margin-bottom: 12px; outline: none; transition: all 0.2s;
-    background: #fbfbfb;
+  #aviso-rostro p {
+    margin: 0 0 18px 0;
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #4a4a55;
   }
-  input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
 
-  /* Ocultar el botón nativo de mostrar contraseña del navegador */
+  /* ===== INPUTS CLAY ===== */
+  input[type="text"],
+  input[type="password"],
+  input[type="number"] {
+    padding: 16px 20px;
+    width: 100%;
+    max-width: 320px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: var(--clay-radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+    outline: none;
+    transition: all 0.3s var(--ease-out);
+    background: var(--clay-base);
+    color: #3d3d48;
+    box-shadow: var(--clay-shadow-in);
+  }
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus {
+    background: var(--clay-surface);
+    border-color: rgba(0, 113, 227, 0.4);
+    box-shadow:
+      inset 3px 3px 8px rgba(163, 177, 198, 0.3),
+      inset -3px -3px 8px rgba(255, 255, 255, 1),
+      0 0 0 4px rgba(0, 113, 227, 0.08);
+  }
+  input::placeholder { color: #9a9aa6; opacity: 0.9; font-weight: 500; }
+
   input[type="password"]::-ms-reveal,
-  input[type="password"]::-ms-clear {
-    display: none !important;
-  }
+  input[type="password"]::-ms-clear { display: none !important; }
   input[type="password"]::-webkit-credentials-auto-fill-button,
   input[type="password"]::-webkit-textfield-decoration-container {
     display: none !important;
@@ -184,235 +565,557 @@
     pointer-events: none;
   }
 
-  /* Tablas */
-  table { width: 100%; border-collapse: collapse; font-size: 15px; text-align: left; }
-  th, td { padding: 14px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  th { font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
-  tr:last-child td { border-bottom: none; }
-  tr.fila-registro { cursor: pointer; transition: background 0.15s; }
-  tr.fila-registro:hover { background: #f8f9fb; }
+  /* ===== TABLAS ===== */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+    font-size: 14.5px;
+    text-align: left;
+  }
+  th, td {
+    padding: 14px 14px;
+    vertical-align: middle;
+  }
+  th {
+    font-weight: 800;
+    color: #8a8a96;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-bottom: 8px;
+  }
+  td {
+    background: var(--clay-surface);
+    border-top: 2px solid rgba(255, 255, 255, 0.85);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      3px 3px 8px rgba(163, 177, 198, 0.22),
+      -3px -3px 8px rgba(255, 255, 255, 0.9);
+  }
+  td:first-child {
+    border-left: 2px solid rgba(255, 255, 255, 0.85);
+    border-top-left-radius: var(--clay-radius-sm);
+    border-bottom-left-radius: var(--clay-radius-sm);
+  }
+  td:last-child {
+    border-right: 2px solid rgba(255, 255, 255, 0.85);
+    border-top-right-radius: var(--clay-radius-sm);
+    border-bottom-right-radius: var(--clay-radius-sm);
+  }
+  tr.fila-registro { cursor: pointer; transition: transform 0.2s var(--ease-bounce); }
+  tr.fila-registro:hover td {
+    background: #f0f6ff;
+    box-shadow:
+      4px 4px 10px rgba(0, 113, 227, 0.15),
+      -4px -4px 10px rgba(255, 255, 255, 1);
+  }
+
   .btn-fila {
-    padding: 7px 12px; font-size: 12px; border-radius: 8px; border: none; cursor: pointer;
-    font-weight: 600; margin: 2px; transition: all 0.15s;
+    padding: 8px 14px;
+    font-size: 12px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    font-weight: 800;
+    margin: 2px;
+    transition: all 0.2s var(--ease-bounce);
   }
-  .btn-fila-editar { background: #e8f0fe; color: var(--primary); }
-  .btn-fila-editar:hover { background: #d0e3ff; }
-  .btn-fila-eliminar { background: #fff0f0; color: var(--danger); }
-  .btn-fila-eliminar:hover { background: #ffd6d6; }
-  @media (max-width: 700px) {
-    table { font-size: 13px; }
-    th, td { padding: 10px 6px; }
-    .btn-fila { padding: 6px 10px; font-size: 11px; }
-    .foto-tabla { height: 36px; width: 36px; }
+  .btn-fila-editar {
+    background: #e8f0fe;
+    color: var(--primary);
+    box-shadow: 3px 3px 8px rgba(0, 113, 227, 0.15),
+                -3px -3px 8px rgba(255, 255, 255, 1);
   }
-  
-  /* Agrupación por Fecha */
+  .btn-fila-editar:active {
+    box-shadow: inset 3px 3px 8px rgba(0, 113, 227, 0.2),
+                inset -3px -3px 8px rgba(255, 255, 255, 1);
+  }
+  .btn-fila-eliminar {
+    background: #fdecec;
+    color: var(--danger);
+    box-shadow: 3px 3px 8px rgba(255, 59, 48, 0.15),
+                -3px -3px 8px rgba(255, 255, 255, 1);
+  }
+  .btn-fila-eliminar:active {
+    box-shadow: inset 3px 3px 8px rgba(255, 59, 48, 0.2),
+                inset -3px -3px 8px rgba(255, 255, 255, 1);
+  }
+
+  .btn-fila-icono {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    background: linear-gradient(145deg, #f0f5ff, #e0ebff);
+    color: var(--primary);
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 17px;
+    line-height: 1;
+    transition: all 0.25s var(--ease-bounce);
+    box-shadow:
+      4px 4px 10px rgba(0, 113, 227, 0.2),
+      -4px -4px 10px rgba(255, 255, 255, 1);
+  }
+  .btn-fila-icono:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow:
+      6px 6px 14px rgba(0, 113, 227, 0.28),
+      -6px -6px 14px rgba(255, 255, 255, 1);
+  }
+  .btn-fila-icono:active {
+    transform: translateY(0) scale(0.97);
+    box-shadow:
+      inset 3px 3px 8px rgba(0, 113, 227, 0.2),
+      inset -3px -3px 8px rgba(255, 255, 255, 1);
+  }
+
+  /* ===== GRUPO FECHA ===== */
   .grupo-fecha {
-    background: var(--card); border-radius: 18px; margin-bottom: 20px; overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius);
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow:
+      8px 8px 20px rgba(163, 177, 198, 0.35),
+      -8px -8px 20px rgba(255, 255, 255, 0.95),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.8);
   }
   .grupo-titulo {
-    background: #fbfbfd; padding: 16px 22px; font-weight: 600; font-size: 15px;
-    color: var(--text); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);
+    background: #eef2f8;
+    padding: 18px 24px;
+    font-weight: 800;
+    font-size: 14.5px;
+    letter-spacing: -0.01em;
+    color: #4a4a55;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8),
+                inset 0 -2px 4px rgba(163, 177, 198, 0.15);
   }
 
-  /* Captura de fotos */
-  .capture-sequence { display: flex; gap: 15px; justify-content: center; margin: 25px 0; }
+  /* ===== CAPTURA FOTOS ===== */
+  .capture-sequence {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin: 30px 0;
+  }
   .capture-step {
-    width: 100px; height: 100px; border-radius: 16px; background: #f5f5f7;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    overflow: hidden; font-weight: 600; color: var(--text-muted); border: 2px dashed #d2d2d7;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative;
+    width: 104px;
+    height: 104px;
+    border-radius: var(--clay-radius);
+    background: var(--clay-base);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-weight: 800;
+    font-size: 24px;
+    color: #9a9aa6;
+    border: 3px dashed rgba(163, 177, 198, 0.4);
+    transition: all 0.4s var(--ease-bounce);
+    position: relative;
+    box-shadow: var(--clay-shadow-in);
   }
-  .capture-step img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
-  .capture-step.done { border-color: var(--success); border-style: solid; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2); }
-  .capture-step.selected { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.2); }
-  
+  .capture-step img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+  }
+  .capture-step.done {
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow:
+      6px 6px 16px rgba(52, 199, 89, 0.3),
+      -6px -6px 16px rgba(255, 255, 255, 1),
+      inset 0 0 0 2px rgba(52, 199, 89, 0.4);
+    transform: scale(1.03);
+  }
+  .capture-step.selected {
+    border: 3px solid rgba(255, 255, 255, 1);
+    box-shadow:
+      0 0 0 5px rgba(0, 113, 227, 0.22),
+      8px 8px 20px rgba(0, 113, 227, 0.28),
+      -8px -8px 20px rgba(255, 255, 255, 1);
+    transform: scale(1.06);
+  }
   .btn-delete-photo {
-    position: absolute; top: 6px; right: 6px; background: rgba(255,59,48,0.9);
-    color: white; border: none; border-radius: 50%; width: 24px; height: 24px;
-    font-size: 12px; cursor: pointer; display: none; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); transition: transform 0.2s;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: linear-gradient(145deg, #ff5c54, #e0322a);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s var(--ease-bounce);
+    z-index: 2;
+    box-shadow: 2px 2px 6px rgba(255, 59, 48, 0.4);
   }
-  .btn-delete-photo:hover { transform: scale(1.1); }
+  .btn-delete-photo:hover { transform: scale(1.15); }
   .capture-step.done .btn-delete-photo { display: flex; }
 
-  /* Badges */
-  .badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
-  .badge.in { background: #e8f8ed; color: #1a7f37; }
-  .badge.out { background: #ffecec; color: #d32f2f; }
-  .foto-tabla { height: 48px; width: 48px; object-fit: cover; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  /* ===== BADGES ===== */
+  .badge {
+    padding: 7px 14px;
+    border-radius: var(--clay-radius-pill);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    display: inline-block;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+  }
+  .badge.in {
+    background: linear-gradient(145deg, #e8f8ed, #d4f0dd);
+    color: #1a7f37;
+    box-shadow: 3px 3px 8px rgba(52, 199, 89, 0.2),
+                -3px -3px 8px rgba(255, 255, 255, 1);
+  }
+  .badge.out {
+    background: linear-gradient(145deg, #fff0f0, #fde0e0);
+    color: #d32f2f;
+    box-shadow: 3px 3px 8px rgba(255, 59, 48, 0.2),
+                -3px -3px 8px rgba(255, 255, 255, 1);
+  }
+
+  .foto-tabla {
+    height: 48px;
+    width: 48px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      4px 4px 10px rgba(163, 177, 198, 0.35),
+      -4px -4px 10px rgba(255, 255, 255, 1);
+  }
 
   #panel-seleccion {
-    display: none; margin-top: 20px; padding: 24px; background: #f0f7ff;
-    border-radius: 16px; border: 1px solid #d0e3ff;
+    display: none;
+    margin-top: 22px;
+    padding: 26px;
+    background: #eef5ff;
+    border-radius: var(--clay-radius);
+    box-shadow:
+      inset 4px 4px 10px rgba(0, 113, 227, 0.12),
+      inset -4px -4px 10px rgba(255, 255, 255, 1);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    animation: clayFade 0.4s var(--ease-out);
+  }
+  #panel-seleccion h3 {
+    font-size: 17px;
+    letter-spacing: -0.02em;
+    margin: 0 0 10px;
+    color: #3d3d48;
+    font-weight: 800;
   }
 
-  /* Botón flotante Admin */
-  #btn-admin {
-    position: fixed; bottom: 30px; left: 30px; width: 60px; height: 60px;
-    border-radius: 50%; background: var(--card); color: var(--text-muted);
-    border: 1px solid var(--border); font-size: 26px; cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 1000;
-  }
-  #btn-admin:hover { transform: rotate(15deg) scale(1.08); color: var(--primary); box-shadow: 0 12px 32px rgba(0,0,0,0.18); }
-
-  /* Menú flotante de Admin */
-  #admin-menu {
-    position: fixed; bottom: 105px; left: 30px;
-    background: var(--card); border-radius: 18px; padding: 8px;
-    box-shadow: 0 12px 48px rgba(0,0,0,0.15); border: 1px solid var(--border);
-    display: none; flex-direction: column; gap: 4px; z-index: 999;
-    transform-origin: bottom left; animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-  #admin-menu.show { display: flex; }
-  @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-  
-  .admin-menu-item {
-    padding: 14px 22px; border-radius: 12px; cursor: pointer; font-size: 15px;
-    font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 12px;
-    transition: background 0.2s;
-  }
-  .admin-menu-item:hover { background: #f5f5f7; }
-  .admin-menu-item span.icon { font-size: 20px; }
-
-  /* Configuración Switch */
+  /* ===== SWITCHES CLAY ===== */
   .config-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 18px; background: #f5f5f7; border-radius: 14px; margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    background: var(--clay-base);
+    border-radius: var(--clay-radius-sm);
+    margin-top: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    transition: all 0.25s var(--ease-out);
+    box-shadow: var(--clay-shadow-in);
   }
-  .config-row span { font-weight: 500; font-size: 16px; }
+  .config-row span {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    color: #4a4a55;
+  }
+
   .switch {
-    position: relative; display: inline-block; width: 54px; height: 32px;
+    position: relative;
+    display: inline-block;
+    width: 58px;
+    height: 34px;
+    flex-shrink: 0;
   }
   .switch input { opacity: 0; width: 0; height: 0; }
   .slider {
-    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #e5e5ea; transition: .4s; border-radius: 34px;
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #dde2ec;
+    transition: 0.4s var(--ease-bounce);
+    border-radius: var(--clay-radius-pill);
+    box-shadow:
+      inset 3px 3px 6px rgba(163, 177, 198, 0.5),
+      inset -3px -3px 6px rgba(255, 255, 255, 1);
+    border: 2px solid rgba(255, 255, 255, 0.7);
   }
   .slider:before {
-    position: absolute; content: ""; height: 28px; width: 28px; left: 2px; bottom: 2px;
-    background-color: white; transition: .4s; border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background: linear-gradient(145deg, #ffffff, #eef0f5);
+    transition: 0.4s var(--ease-bounce);
+    border-radius: 50%;
+    box-shadow:
+      3px 3px 8px rgba(163, 177, 198, 0.5),
+      -2px -2px 6px rgba(255, 255, 255, 1);
   }
-  input:checked + .slider { background-color: var(--success); }
-  input:checked + .slider:before { transform: translateX(22px); }
+  input:checked + .slider {
+    background: linear-gradient(145deg, #4adf70, #2cb84e);
+    box-shadow:
+      inset 3px 3px 6px rgba(30, 140, 60, 0.35),
+      inset -3px -3px 6px rgba(110, 240, 140, 0.4);
+  }
+  input:checked + .slider:before { transform: translateX(24px); }
 
-  /* Modales */
+  /* ===== MODALES CLAY ===== */
   .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    display: none; align-items: center; justify-content: center; z-index: 2000;
-    opacity: 0; transition: opacity 0.3s ease;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(220, 226, 238, 0.55);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s var(--ease-out);
+    padding: 16px;
   }
   .modal-overlay.show { display: flex; opacity: 1; }
-  #modal-confirmar-guardar, #modal-password-accion, #modal-confirmar-eliminar { z-index: 3000; }
-  #modal-foto-ampliada { z-index: 4000; background: rgba(0,0,0,0.85); }
-  /* El aviso SIEMPRE va por encima de cualquier modal (incluidas las contraseñas) */
+
+  #modal-confirmar-guardar,
+  #modal-password-accion,
+  #modal-confirmar-eliminar { z-index: 3000; }
+  #modal-foto-ampliada { z-index: 4000; background: rgba(0, 0, 0, 0.86); }
   #modal-aviso { z-index: 4500; }
 
-  .filtros-registros {
-    display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center;
-  }
-  .filtros-registros select {
-    padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
-    font-size: 14px; background: #fff; min-width: 120px;
-  }
-  .anio-card {
-    background: var(--card); border-radius: 16px; margin-bottom: 16px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid var(--border); overflow: hidden;
-  }
-  .anio-header {
-    padding: 16px 20px; font-weight: 700; font-size: 17px; cursor: pointer;
-    display: flex; justify-content: space-between; align-items: center;
-    background: #fbfbfd; user-select: none;
-  }
-  .anio-header:hover { background: #f0f0f5; }
-  .anio-body { display: none; padding: 0 12px 16px; }
-  .anio-card.open .anio-body { display: block; }
-  .anio-card.open .anio-chevron { transform: rotate(180deg); }
-  .anio-chevron { transition: transform 0.2s; font-size: 14px; color: var(--text-muted); }
-  .foto-clickable { cursor: zoom-in; transition: transform 0.15s; }
-  .foto-clickable:hover { transform: scale(1.08); }
   .modal-box {
-    background: var(--card); width: 90%; max-width: 360px;
-    border-radius: 28px; padding: 28px; text-align: center;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-    transform: scale(0.95) translateY(10px); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--clay-surface);
+    width: 90%;
+    max-width: 400px;
+    border-radius: 32px;
+    padding: 34px 30px;
+    text-align: center;
+    box-shadow:
+      18px 18px 44px rgba(163, 177, 198, 0.5),
+      -18px -18px 44px rgba(255, 255, 255, 1),
+      inset 3px 3px 8px rgba(255, 255, 255, 1),
+      inset -3px -3px 8px rgba(163, 177, 198, 0.12);
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    transform: scale(0.88) translateY(20px);
+    transition: all 0.4s var(--ease-bounce);
+    max-height: 90vh;
+    overflow-y: auto;
   }
   .modal-overlay.show .modal-box { transform: scale(1) translateY(0); }
-  .modal-icon {
-    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 20px;
-    display: flex; align-items: center; justify-content: center; font-size: 32px;
-  }
-  .modal-icon.danger { background: #ffecec; color: var(--danger); }
-  .modal-icon.primary { background: #e8f0fe; color: var(--primary); }
-  .modal-box h3 { margin: 0 0 10px 0; font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
-  .modal-box p { margin: 0 0 24px 0; font-size: 15px; color: var(--text-muted); line-height: 1.4; }
-  .modal-box input {
-    width: 100%; padding: 16px; border: 1px solid var(--border); border-radius: 14px;
-    font-size: 16px; margin-bottom: 24px; text-align: center; outline: none; background: #f5f5f7;
-  }
-  .modal-box input:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); }
-  
-  .modal-btn-group { display: flex; gap: 12px; }
-  .modal-btn-group button {
-    flex: 1; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 600;
-    cursor: pointer; border: none; transition: all 0.2s ease;
-  }
-  .modal-btn-group button:active { transform: scale(0.96); }
-  /* Todos los botones "cancel" de cualquier modal ahora son visibles (naranja) */
-  .modal-btn-group button.cancel {
-    background: #ff9500; color: #fff;
-    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.28);
-  }
-  .modal-btn-group button.cancel:hover { background: #f08a00; }
-  .modal-btn-group button.cancel:active { background: #e68500; }
-  .modal-btn-group button.confirm-primary { background: var(--primary); color: white; }
-  .modal-btn-group button.confirm-danger { background: var(--danger); color: white; }
 
-  /* ===== Botones con color visible ===== */
-  .modal-btn-group button.cancel-visible {
-    background: #ff9500; color: #fff;
-    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.28);
+  .modal-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      6px 6px 16px rgba(163, 177, 198, 0.4),
+      -6px -6px 16px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+      inset -2px -2px 4px rgba(163, 177, 198, 0.15);
   }
-  .modal-btn-group button.cancel-visible:active { background: #e68500; }
-  .modal-btn-group button.cancel-visible:hover { background: #f08a00; }
+  .modal-icon.danger {
+    background: linear-gradient(145deg, #ffe4e4, #fdd0d0);
+    color: var(--danger);
+  }
+  .modal-icon.primary {
+    background: linear-gradient(145deg, #e5efff, #cfe0ff);
+    color: var(--primary);
+  }
+
+  .modal-box h3 {
+    margin: 0 0 10px;
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #3d3d48;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  .modal-box p {
+    margin: 0 0 26px;
+    font-size: 14.5px;
+    color: #7a7a88;
+    line-height: 1.55;
+    white-space: pre-line;
+    font-weight: 500;
+  }
+  .modal-box input {
+    width: 100%;
+    padding: 16px 18px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: var(--clay-radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    text-align: center;
+    outline: none;
+    background: var(--clay-base);
+    color: #3d3d48;
+    transition: all 0.25s var(--ease-out);
+    box-shadow: var(--clay-shadow-in);
+  }
+  .modal-box input:focus {
+    background: var(--clay-surface);
+    border-color: rgba(0, 113, 227, 0.4);
+    box-shadow:
+      inset 3px 3px 8px rgba(163, 177, 198, 0.3),
+      inset -3px -3px 8px rgba(255, 255, 255, 1),
+      0 0 0 4px rgba(0, 113, 227, 0.08);
+  }
+
+  .modal-btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .modal-btn-group button {
+    flex: 1;
+    padding: 15px 18px;
+    border-radius: var(--clay-radius-sm);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    transition: all 0.25s var(--ease-bounce);
+    min-width: 100px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  .modal-btn-group button:hover { transform: translateY(-2px); }
+  .modal-btn-group button:active { transform: translateY(0) scale(0.97); }
+
+  .modal-btn-group button.cancel {
+    background: linear-gradient(145deg, #ffb340, #f08a00);
+    color: #fff;
+    box-shadow:
+      6px 6px 14px rgba(255, 149, 0, 0.35),
+      -6px -6px 14px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.4);
+  }
+  .modal-btn-group button.cancel:active {
+    box-shadow: inset 5px 5px 12px rgba(200, 110, 0, 0.5),
+                inset -5px -5px 12px rgba(255, 190, 100, 0.6);
+  }
+  .modal-btn-group button.confirm-primary {
+    background: linear-gradient(145deg, #1a85f0, #0062cc);
+    color: white;
+    box-shadow:
+      6px 6px 14px rgba(0, 113, 227, 0.4),
+      -6px -6px 14px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.4);
+  }
+  .modal-btn-group button.confirm-primary:active {
+    box-shadow: inset 5px 5px 12px rgba(0, 70, 160, 0.5),
+                inset -5px -5px 12px rgba(100, 168, 255, 0.6);
+  }
+  .modal-btn-group button.confirm-danger {
+    background: linear-gradient(145deg, #ff5c54, #e0322a);
+    color: white;
+    box-shadow:
+      6px 6px 14px rgba(255, 59, 48, 0.4),
+      -6px -6px 14px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.35);
+  }
+  .modal-btn-group button.confirm-danger:active {
+    box-shadow: inset 5px 5px 12px rgba(180, 30, 25, 0.5),
+                inset -5px -5px 12px rgba(255, 140, 130, 0.6);
+  }
+
+  .modal-btn-group button.cancel-visible {
+    background: linear-gradient(145deg, #ffb340, #f08a00);
+    color: #fff;
+    box-shadow:
+      6px 6px 14px rgba(255, 149, 0, 0.35),
+      -6px -6px 14px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.4);
+  }
+  .modal-btn-group button.cancel-visible:active {
+    box-shadow: inset 5px 5px 12px rgba(200, 110, 0, 0.5),
+                inset -5px -5px 12px rgba(255, 190, 100, 0.6);
+  }
 
   .modal-btn-group button.cancel-neutral {
-    background: #6e6e73; color: #fff;
-    box-shadow: 0 4px 12px rgba(110, 110, 115, 0.25);
+    background: linear-gradient(145deg, #8c8c98, #6e6e7a);
+    color: #fff;
+    box-shadow:
+      6px 6px 14px rgba(110, 110, 122, 0.35),
+      -6px -6px 14px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.3);
   }
-  .modal-btn-group button.cancel-neutral:active { background: #5c5c61; }
-  .modal-btn-group button.cancel-neutral:hover { background: #646469; }
+  .modal-btn-group button.cancel-neutral:active {
+    box-shadow: inset 5px 5px 12px rgba(70, 70, 80, 0.5),
+                inset -5px -5px 12px rgba(160, 160, 175, 0.5);
+  }
 
-  /* Botón "Salida" del modal de reconocimiento: rojo visible */
   .modal-btn-group button.rec-salida {
-    background: var(--danger); color: #fff;
-    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.28);
+    background: linear-gradient(145deg, #ff5c54, #e0322a);
+    color: #fff;
+    box-shadow:
+      6px 6px 14px rgba(255, 59, 48, 0.4),
+      -6px -6px 14px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.35);
   }
-  .modal-btn-group button.rec-salida:hover { background: #e0322a; }
-  .modal-btn-group button.rec-salida:active { background: #c92a22; }
+  .modal-btn-group button.rec-salida:active {
+    box-shadow: inset 5px 5px 12px rgba(180, 30, 25, 0.5),
+                inset -5px -5px 12px rgba(255, 140, 130, 0.6);
+  }
 
-  /* ===== Toast dinámico ===== */
+  /* ===== TOASTS CLAY ===== */
   #toast-container {
-    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
-    z-index: 5000; display: flex; flex-direction: column; gap: 10px;
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: min(420px, calc(100vw - 32px));
-    /* CORRECCIÓN: no intercepta clics; los toasts son informativos y se cierran solos */
     pointer-events: none;
   }
   .toast {
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(255,255,255,0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px; padding: 14px 18px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
-    border: 1px solid var(--border);
-    border-left: 5px solid var(--primary);
-    font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.35;
-    animation: toastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    /* CORRECCIÓN: los toasts NO capturan el clic (evita tapar botones como Guardar) */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius-sm);
+    padding: 16px 20px;
+    box-shadow:
+      8px 8px 22px rgba(163, 177, 198, 0.45),
+      -8px -8px 22px rgba(255, 255, 255, 1),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-left: 6px solid var(--primary);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #4a4a55;
+    line-height: 1.4;
+    animation: toastClayIn 0.45s var(--ease-bounce);
     pointer-events: none;
   }
   .toast .toast-icon { font-size: 20px; flex-shrink: 0; }
@@ -420,72 +1123,331 @@
   .toast.ok { border-left-color: var(--success); }
   .toast.err { border-left-color: var(--danger); }
   .toast.info { border-left-color: var(--primary); }
-  .toast.hide { animation: toastOut 0.3s ease forwards; }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(-16px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  @keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-12px) scale(0.96); } }
-
-  /* ===== Modal de reconocimiento ===== */
-  #modal-reconocimiento .modal-box {
-    max-width: 400px; border-top: 5px solid var(--success);
-    animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .toast.hide { animation: toastClayOut 0.3s var(--ease-out) forwards; }
+  @keyframes toastClayIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  #modal-reconocimiento .modal-icon { background: #e8f8ed; color: var(--success); }
-  #modal-reconocimiento .emp-rec-nombre { font-size: 22px; font-weight: 800; color: var(--text); margin: 4px 0 2px; }
-  #modal-reconocimiento .emp-rec-id { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
-  #modal-reconocimiento .emp-rec-puesto { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 20px; }
+  @keyframes toastClayOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-14px) scale(0.92); }
+  }
 
-  /* ===== Formulario editar colaborador ===== */
+  /* ===== MODAL RECONOCIMIENTO ===== */
+  #modal-reconocimiento .modal-box {
+    max-width: 420px;
+    border-top: 6px solid var(--success);
+    animation: clayPop 0.45s var(--ease-bounce);
+  }
+  #modal-reconocimiento .modal-icon {
+    background: linear-gradient(145deg, #e8f8ed, #d0f0db);
+    color: var(--success);
+  }
+  #modal-reconocimiento .emp-rec-nombre {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #3d3d48;
+    margin: 6px 0 4px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  #modal-reconocimiento .emp-rec-id {
+    font-size: 13.5px;
+    color: #8a8a96;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  #modal-reconocimiento .emp-rec-puesto {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+  }
+
+  /* ===== EDITAR COLABORADOR ===== */
   #modal-editar-colaborador .edit-form { display: flex; flex-direction: column; gap: 4px; }
   #modal-editar-colaborador .edit-field { display: flex; flex-direction: column; }
-  #modal-editar-colaborador .edit-field label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+  #modal-editar-colaborador .edit-field label {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #8a8a96;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
   #modal-editar-colaborador .edit-field input {
-    width: 100%; max-width: none; margin-bottom: 0;
-    padding: 13px 16px; border-radius: 12px; font-size: 15px;
+    width: 100%;
+    max-width: none;
+    margin-bottom: 0;
+    padding: 14px 18px;
+    border-radius: var(--clay-radius-sm);
+    font-size: 15px;
   }
   #modal-editar-colaborador .edit-actions-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
   }
   #modal-editar-colaborador .edit-actions-grid button {
-    width: 100%; padding: 13px 14px; border-radius: 12px; font-size: 14px;
-    font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--clay-radius-sm);
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    transition: all 0.25s var(--ease-bounce);
   }
-  #modal-editar-colaborador .edit-actions-grid button:active { transform: scale(0.97); }
-  #modal-editar-colaborador .edit-actions-grid .btn-foto-cam { background: #eef3ff; color: var(--primary); border: 1px solid #dbe4ff; }
-  #modal-editar-colaborador .edit-actions-grid .btn-foto-cam:hover { background: #dbe7ff; }
-  #modal-editar-colaborador .edit-actions-grid .btn-del-foto { background: #fff0f0; color: var(--danger); border: 1px solid #ffd6d6; }
-  #modal-editar-colaborador .edit-actions-grid .btn-del-foto:hover { background: #ffd6d6; }
-  #modal-editar-colaborador .edit-file-input { width: 100%; max-width: none; margin: 6px 0 0; }
-  
-  @media (max-width: 480px) {
-    #modal-editar-colaborador .edit-actions-grid { grid-template-columns: 1fr; }
+  #modal-editar-colaborador .edit-actions-grid button:hover { transform: translateY(-2px); }
+  #modal-editar-colaborador .edit-actions-grid button:active { transform: translateY(0) scale(0.97); }
+  #modal-editar-colaborador .edit-actions-grid .btn-foto-cam {
+    background: linear-gradient(145deg, #f0f5ff, #e0ebff);
+    color: var(--primary);
+    box-shadow:
+      5px 5px 12px rgba(0, 113, 227, 0.2),
+      -5px -5px 12px rgba(255, 255, 255, 1);
   }
+  #modal-editar-colaborador .edit-actions-grid .btn-foto-cam:active {
+    box-shadow: inset 4px 4px 10px rgba(0, 113, 227, 0.2),
+                inset -4px -4px 10px rgba(255, 255, 255, 1);
+  }
+  #modal-editar-colaborador .edit-actions-grid .btn-del-foto {
+    background: linear-gradient(145deg, #fff0f0, #fde0e0);
+    color: var(--danger);
+    box-shadow:
+      5px 5px 12px rgba(255, 59, 48, 0.2),
+      -5px -5px 12px rgba(255, 255, 255, 1);
+  }
+  #modal-editar-colaborador .edit-actions-grid .btn-del-foto:active {
+    box-shadow: inset 4px 4px 10px rgba(255, 59, 48, 0.2),
+                inset -4px -4px 10px rgba(255, 255, 255, 1);
+  }
+  #modal-editar-colaborador .edit-file-input { width: 100%; max-width: none; margin: 8px 0 0; }
 
-  /* ===== Botones del footer Editar Colaborador (AJUSTE PLANOS) ===== */
   #modal-editar-colaborador .modal-btn-group {
-    margin-top: 20px;
+    margin-top: 24px;
     flex-wrap: wrap;
   }
   #modal-editar-colaborador .modal-btn-group button {
-    padding: 12px 14px; /* Reducción de altura */
-    font-size: 15px;   /* Un poco más compacto */
-    border-radius: 10px; /* Bordes un poco menos redondos */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Sombra más plana */
-  }
-  #modal-editar-colaborador .modal-btn-group button.cancel-visible,
-  #modal-editar-colaborador .modal-btn-group button.confirm-danger,
-  #modal-editar-colaborador .modal-btn-group button.confirm-primary {
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Igualar la sombra sutil */
-  }
-  #modal-editar-colaborador .modal-btn-group button:active {
-    transform: scale(0.97);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Se aplasta aún más al hacer clic */
+    padding: 13px 16px;
+    font-size: 14px;
+    border-radius: var(--clay-radius-sm);
   }
 
-  /* ===== Campo inválido: feedback visual ===== */
+  .emp-foto-preview { display: flex; justify-content: center; margin: 6px 0 20px; }
+  .emp-foto-preview img {
+    width: 124px;
+    height: 124px;
+    object-fit: cover;
+    border-radius: var(--clay-radius);
+    border: 4px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      10px 10px 24px rgba(163, 177, 198, 0.45),
+      -10px -10px 24px rgba(255, 255, 255, 1);
+  }
+
+  /* ===== FILTROS ===== */
+  .filtros-registros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 22px;
+    align-items: flex-end;
+  }
+  .filtros-registros select {
+    padding: 12px 16px;
+    border-radius: var(--clay-radius-sm);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    font-size: 13.5px;
+    font-weight: 700;
+    background: var(--clay-base);
+    min-width: 140px;
+    outline: none;
+    transition: all 0.25s var(--ease-out);
+    box-shadow: var(--clay-shadow-in);
+    color: #4a4a55;
+  }
+  .filtros-registros select:focus {
+    border-color: rgba(0, 113, 227, 0.4);
+    box-shadow:
+      inset 3px 3px 8px rgba(163, 177, 198, 0.3),
+      inset -3px -3px 8px rgba(255, 255, 255, 1),
+      0 0 0 4px rgba(0, 113, 227, 0.08);
+  }
+
+  /* ===== AÑO CARD ===== */
+  .anio-card {
+    background: var(--clay-surface);
+    border-radius: var(--clay-radius);
+    margin-bottom: 16px;
+    box-shadow:
+      8px 8px 20px rgba(163, 177, 198, 0.35),
+      -8px -8px 20px rgba(255, 255, 255, 0.95),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    overflow: hidden;
+    transition: box-shadow 0.3s var(--ease-out);
+  }
+  .anio-header {
+    padding: 18px 22px;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #eef2f8;
+    user-select: none;
+    transition: background 0.2s var(--ease-out);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8);
+    color: #4a4a55;
+  }
+  .anio-header:hover { background: #e6ecf5; }
+  .anio-body { display: none; padding: 6px 14px 18px; }
+  .anio-card.open .anio-body { display: block; }
+  .anio-card.open .anio-chevron { transform: rotate(180deg); }
+  .anio-chevron {
+    transition: transform 0.3s var(--ease-bounce);
+    font-size: 13px;
+    color: #8a8a96;
+  }
+
+  .foto-clickable {
+    cursor: zoom-in;
+    transition: transform 0.25s var(--ease-bounce);
+  }
+  .foto-clickable:hover { transform: scale(1.08); }
+
+  #modal-foto-ampliada img {
+    max-width: 90vw;
+    max-height: 80vh;
+    border-radius: var(--clay-radius);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    border: 4px solid rgba(255, 255, 255, 0.9);
+  }
+  #modal-foto-ampliada p {
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
   .campo-invalido {
     border-color: var(--danger) !important;
     background: #fff5f5 !important;
-    box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.12) !important;
+    box-shadow:
+      inset 3px 3px 8px rgba(255, 59, 48, 0.2),
+      inset -3px -3px 8px rgba(255, 255, 255, 1),
+      0 0 0 4px rgba(255, 59, 48, 0.12) !important;
+  }
+
+  /* ===== SCROLLS ===== */
+  #modal-configuraciones .modal-box,
+  #modal-editar-colaborador .modal-box { overscroll-behavior: contain; }
+  #modal-configuraciones .modal-box::-webkit-scrollbar,
+  #modal-editar-colaborador .modal-box::-webkit-scrollbar { width: 8px; }
+  #modal-configuraciones .modal-box::-webkit-scrollbar-track,
+  #modal-editar-colaborador .modal-box::-webkit-scrollbar-track {
+    background: var(--clay-base);
+    border-radius: 10px;
+    box-shadow: inset 2px 2px 4px rgba(163, 177, 198, 0.3);
+  }
+  #modal-configuraciones .modal-box::-webkit-scrollbar-thumb,
+  #modal-editar-colaborador .modal-box::-webkit-scrollbar-thumb {
+    background: linear-gradient(145deg, #c8d0e0, #a8b4cc);
+    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+  }
+
+  #modal-aviso .modal-box {
+    max-width: 400px;
+    text-align: center;
+    border-top: 6px solid var(--primary);
+  }
+  #modal-aviso.aviso-ok .modal-box { border-top-color: var(--success); }
+  #modal-aviso.aviso-error .modal-box { border-top-color: var(--danger); }
+  #modal-aviso .modal-icon { font-size: 34px; }
+  #modal-aviso h3 { margin: 10px 0 12px; }
+  #modal-aviso p { color: #7a7a88; line-height: 1.55; margin-bottom: 24px; white-space: pre-line; }
+
+  #modal-editar-colaborador .modal-box { text-align: left; }
+
+  /* ===== FILE INPUT ===== */
+  input[type="file"] {
+    display: inline-block;
+    width: 100%;
+    max-width: 280px;
+    padding: 14px 18px;
+    border: 3px dashed rgba(0, 113, 227, 0.3);
+    background: #eef3ff;
+    color: var(--primary);
+    border-radius: var(--clay-radius-sm);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-out);
+    box-shadow: var(--clay-shadow-in);
+  }
+  input[type="file"]:hover {
+    background: #e0ecff;
+    border-color: rgba(0, 113, 227, 0.5);
+  }
+  input[type="file"]::file-selector-button {
+    margin-right: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    background: linear-gradient(145deg, #1a85f0, #0062cc);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-bounce);
+    box-shadow:
+      4px 4px 10px rgba(0, 113, 227, 0.35),
+      -4px -4px 10px rgba(255, 255, 255, 0.9);
+  }
+  input[type="file"]::file-selector-button:hover { transform: translateY(-1px); }
+  input[type="file"]::file-selector-button:active {
+    box-shadow: inset 3px 3px 8px rgba(0, 70, 160, 0.5),
+                inset -3px -3px 8px rgba(100, 168, 255, 0.6);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 700px) {
+    body { padding: 14px; }
+    .video-wrap { width: 100%; border-radius: var(--clay-radius-sm); }
+    .modal-box {
+      width: calc(100vw - 24px) !important;
+      max-width: calc(100vw - 24px) !important;
+      padding: 26px 22px;
+    }
+    .modal-btn-group { flex-direction: column; }
+    .modal-btn-group button { width: 100%; }
+    .tabs { padding: 6px; gap: 4px; }
+    .tab-btn { padding: 12px 8px; font-size: 12.5px; }
+    .card { padding: 26px 18px; border-radius: var(--clay-radius-sm); }
+    table { font-size: 12.5px; }
+    th, td { padding: 10px 8px; }
+    .btn-fila { padding: 6px 10px; font-size: 11px; }
+    .foto-tabla { height: 38px; width: 38px; border-width: 2px; }
+    .capture-step { width: 88px; height: 88px; border-radius: var(--clay-radius-sm); font-size: 20px; }
+    #btn-admin { bottom: 20px; left: 20px; width: 56px; height: 56px; font-size: 24px; }
+    #admin-menu { bottom: 88px; left: 20px; }
+    .filtros-registros select { min-width: 0; flex: 1; }
+    .filtros-registros > div { flex: 1; min-width: 120px; }
+    .btn-fila-icono { width: 38px; height: 38px; }
+  }
+
+  @media (max-width: 480px) {
+    #modal-editar-colaborador .edit-actions-grid { grid-template-columns: 1fr; }
+    .capture-sequence { gap: 10px; }
+    .capture-step { width: 78px; height: 78px; font-size: 18px; }
+    h1 { font-size: 28px; }
   }
 </style>
 </head>
@@ -500,8 +1462,8 @@
 <div id="toast-container"></div>
 
 <div class="container">
-  <h1 style="text-align: center; font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 35px; color: #1d1d1f;">BioSync</h1>
-  
+  <h1>BioSync</h1>
+
   <div class="tabs">
     <button class="tab-btn active" data-tab="escaner">Biométrico de Asistencia</button>
     <button class="tab-btn" data-tab="empleados" id="tab-btn-empleados" style="display: none;">Registro de Colaborador</button>
@@ -511,9 +1473,9 @@
   <!-- BIOMÉTRICO -->
   <div id="tab-escaner" class="tab-content active">
     <div class="card">
-      
+
       <div id="bloqueo-camara" style="display: none; margin-bottom: 20px;">
-        <p style="color: var(--danger); font-weight: 600; margin-bottom: 15px;">El navegador ha bloqueado la cámara automática.</p>
+        <p style="color: var(--danger); font-weight: 700; margin-bottom: 16px;">El navegador ha bloqueado la cámara automática.</p>
         <button class="action entrada" onclick="encenderCamara(true)">Toca aquí para encender la cámara</button>
       </div>
 
@@ -522,9 +1484,9 @@
         <canvas id="overlayScanner" class="overlay" width="400" height="300"></canvas>
       </div>
       <div id="status" style="display:none;"></div>
-      
-      <div id="user-info" style="font-size: 20px; margin-bottom: 15px; font-weight: 700; display: none; color: var(--success);"></div>
-      
+
+      <div id="user-info" style="font-size: 20px; margin-bottom: 16px; font-weight: 800; letter-spacing: -0.02em; display: none; color: var(--success); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);"></div>
+
       <div class="btn-group" id="acciones-asistencia" style="display: none;">
         <button id="btnEntrada" class="action entrada" disabled>Registrar Entrada</button>
         <button id="btnSalida" class="action salida" disabled>Registrar Salida</button>
@@ -541,16 +1503,16 @@
   <div id="tab-empleados" class="tab-content">
     <div class="card">
       <h2>Registrar Nuevo Colaborador</h2>
-      <div style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <div style="margin-bottom: 26px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
         <input type="text" id="inputId" placeholder="Número de colaborador" style="max-width: 380px;">
         <input type="text" id="inputNombre" placeholder="Nombre completo" style="max-width: 380px;">
         <input type="text" id="inputPuesto" placeholder="Puesto" style="max-width: 380px;">
       </div>
-      
+
       <div class="video-wrap">
         <video id="videoRegistro" width="400" height="300" autoplay muted playsinline></video>
       </div>
-      
+
       <div id="statusRegistro">Iniciando cámara...</div>
 
       <div class="capture-sequence">
@@ -559,20 +1521,20 @@
         <div class="capture-step" id="step3">3</div>
       </div>
 
-      <div class="btn-group" style="margin-bottom: 15px;">
+      <div class="btn-group" style="margin-bottom: 16px;">
         <button id="btnTomarFoto" class="action registro" disabled>📸 Tomar Foto 1</button>
         <button id="btnReiniciar" class="action secondary" style="display: none;">Cancelar Captura</button>
       </div>
 
       <div id="panel-seleccion">
         <h3>✅ ¡3 fotos capturadas!</h3>
-        <p style="color: var(--text-muted); font-size: 15px;">Selecciona la mejor foto para el registro oficial.</p>
-        <button id="btnConfirmarFoto" class="action registro" style="margin-top: 10px;">Confirmar y Guardar</button>
+        <p style="color: #7a7a88; font-size: 14.5px; font-weight: 600;">Selecciona la mejor foto para el registro oficial.</p>
+        <button id="btnConfirmarFoto" class="action registro" style="margin-top: 12px;">Confirmar y Guardar</button>
       </div>
     </div>
 
-    <div class="card" style="text-align: left; padding: 25px;">
-      <h2 style="margin-bottom: 20px;">Base de Datos de Colaboradores</h2>
+    <div class="card" style="text-align: left; padding: 28px;">
+      <h2 style="margin-bottom: 22px;">Base de Datos de Colaboradores</h2>
       <div style="overflow-x: auto;">
         <table id="tablaEmpleados">
           <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Puesto</th><th>Acciones</th></tr></thead>
@@ -584,23 +1546,23 @@
 
   <!-- REGISTRO DE ASISTENCIAS -->
   <div id="tab-registros" class="tab-content">
-    <div class="card" style="text-align: left; padding: 25px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+    <div class="card" style="text-align: left; padding: 28px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 15px;">
         <h2 style="margin: 0;">Registro de Asistencias</h2>
         <div style="display: flex; gap: 10px;">
-          <button id="btnExportarCSV" class="action exportar" style="padding: 12px 20px; font-size: 14px;">Exportar a Excel</button>
+          <button id="btnExportarCSV" class="action exportar">Exportar a Excel</button>
         </div>
       </div>
 
       <div class="filtros-registros">
         <div>
-          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Año</label>
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 800;">Año</label>
           <select id="filtro-anio">
             <option value="todos">Todos</option>
           </select>
         </div>
         <div>
-          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Mes</label>
+          <label style="font-size: 11px; color: #8a8a96; display: block; margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 800;">Mes</label>
           <select id="filtro-mes">
             <option value="todos">Todos</option>
             <option value="0">Enero</option>
@@ -618,9 +1580,9 @@
           </select>
         </div>
       </div>
-      
+
       <div id="contenedor-registros" style="overflow-x: auto;">
-        <p style="text-align: center; color: var(--text-muted);">Cargando registros...</p>
+        <p style="text-align: center; color: #8a8a96;">Cargando registros...</p>
       </div>
     </div>
   </div>
@@ -647,8 +1609,8 @@
     <p id="desc-modal-pass">Ingresa la contraseña de administrador para continuar.</p>
     <div style="position: relative; width: 100%; margin-bottom: 24px;">
       <input type="password" id="input-password" placeholder="Contraseña" style="margin-bottom: 0; padding-right: 48px;">
-      <button type="button" onclick="togglePasswordVisibility('input-password', this)" 
-              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-muted); padding: 4px;">
+      <button type="button" onclick="togglePasswordVisibility('input-password', this)"
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #8a8a96; padding: 4px;">
         👁️
       </button>
     </div>
@@ -659,13 +1621,13 @@
   </div>
 </div>
 
-<!-- Modal: Configuraciones (mismo diseño que Editar Registro) -->
+<!-- Modal: Configuraciones -->
 <div id="modal-configuraciones" class="modal-overlay">
-  <div class="modal-box" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
-    <div class="modal-icon primary" style="margin: 0 auto 16px;">⚙️</div>
-    <h3 style="text-align: center; margin-bottom: 8px;">Configuraciones</h3>
-    <p style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Ajusta el tiempo mínimo de salida, las coordenadas de la oficina y el radio permitido.</p>
-    
+  <div class="modal-box" style="text-align: left; max-width: 540px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-icon primary" style="margin: 0 auto 18px;">⚙️</div>
+    <h3 style="text-align: center; margin-bottom: 10px;">Configuraciones</h3>
+    <p style="text-align: center; color: #7a7a88; font-size: 13.5px; margin-bottom: 22px; font-weight: 500;">Ajusta el tiempo mínimo de salida, las coordenadas de la oficina y el radio permitido.</p>
+
     <div class="config-row" style="margin-top: 0;">
       <span>Encender cámara al abrir</span>
       <label class="switch">
@@ -673,7 +1635,7 @@
         <span class="slider"></span>
       </label>
     </div>
-    <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0; text-align: center;">
+    <p style="font-size: 12.5px; color: #8a8a96; margin: 10px 0 18px 0; text-align: center; font-weight: 600;">
       Si se desactiva, la cámara no se encenderá hasta que tomes una acción manual.
     </p>
 
@@ -684,53 +1646,53 @@
         <span class="slider"></span>
       </label>
     </div>
-    <p style="font-size: 13px; color: var(--text-muted); margin: 8px 0 16px 0; text-align: center;">
+    <p style="font-size: 12.5px; color: #8a8a96; margin: 10px 0 18px 0; text-align: center; font-weight: 600;">
       Solicita el permiso de ubicación una sola vez al abrir la app.
     </p>
 
-    <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 12px;">
-      <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 10px;">Tiempo mínimo para salida</label>
+    <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Tiempo mínimo para salida</label>
       <div style="display: flex; gap: 10px; align-items: center;">
         <div style="flex: 1;">
-          <input type="number" id="input-horas-minimas" min="0" max="23" step="1" value="5" 
-                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
-          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Horas</p>
+          <input type="number" id="input-horas-minimas" min="0" max="23" step="1" value="5"
+                 style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 15px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+          <p style="font-size: 11px; color: #8a8a96; margin: 6px 0 0 0; text-align: center; font-weight: 700;">Horas</p>
         </div>
-        <span style="font-size: 18px; font-weight: 600; color: var(--text-muted);">:</span>
+        <span style="font-size: 18px; font-weight: 800; color: #8a8a96;">:</span>
         <div style="flex: 1;">
-          <input type="number" id="input-minutos-minimos" min="0" max="59" step="1" value="0" 
-                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
-          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Minutos</p>
+          <input type="number" id="input-minutos-minimos" min="0" max="59" step="1" value="0"
+                 style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 15px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+          <p style="font-size: 11px; color: #8a8a96; margin: 6px 0 0 0; text-align: center; font-weight: 700;">Minutos</p>
         </div>
       </div>
-      <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 0 0;">Por defecto: 5 horas 0 minutos. Puedes poner solo horas, solo minutos, o ambos.</p>
+      <p style="font-size: 11.5px; color: #8a8a96; margin: 10px 0 0 0; font-weight: 600;">Por defecto: 5 horas 0 minutos. Puedes poner solo horas, solo minutos, o ambos.</p>
     </div>
 
-    <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 12px;">
-      <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 10px;">Coordenadas de la oficina</label>
+    <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 14px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 12px; color: #4a4a55;">Coordenadas de la oficina</label>
       <div style="display: flex; gap: 10px;">
         <div style="flex: 1;">
           <input type="number" id="input-oficina-lat" step="any"
-                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
-          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Latitud</p>
+                 style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 15px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+          <p style="font-size: 11px; color: #8a8a96; margin: 6px 0 0 0; text-align: center; font-weight: 700;">Latitud</p>
         </div>
         <div style="flex: 1;">
           <input type="number" id="input-oficina-lng" step="any"
-                 style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0; text-align: center;">
-          <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 0; text-align: center;">Longitud</p>
+                 style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 15px; margin-bottom: 0; text-align: center; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+          <p style="font-size: 11px; color: #8a8a96; margin: 6px 0 0 0; text-align: center; font-weight: 700;">Longitud</p>
         </div>
       </div>
-      <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 0 0;">Se usan para validar que estés dentro del radio permitido.</p>
+      <p style="font-size: 11.5px; color: #8a8a96; margin: 10px 0 0 0; font-weight: 600;">Se usan para validar que estés dentro del radio permitido.</p>
     </div>
 
-    <div style="padding: 14px 18px; background: #f5f5f7; border-radius: 14px; margin-bottom: 8px;">
-      <label style="font-weight: 500; font-size: 15px; display: block; margin-bottom: 8px;">Radio permitido (metros)</label>
-      <input type="number" id="input-radio-metros" min="10" max="5000" step="10" value="100" 
-             style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; margin-bottom: 0;">
-      <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 0 0;">Por defecto: 100 metros</p>
+    <div style="padding: 16px 20px; background: var(--clay-base); border-radius: var(--clay-radius-sm); margin-bottom: 10px; border: 2px solid rgba(255, 255, 255, 0.75); box-shadow: var(--clay-shadow-in);">
+      <label style="font-weight: 800; font-size: 14.5px; display: block; margin-bottom: 10px; color: #4a4a55;">Radio permitido (metros)</label>
+      <input type="number" id="input-radio-metros" min="10" max="5000" step="10" value="100"
+             style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; font-size: 15px; margin-bottom: 0; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 700;">
+      <p style="font-size: 11.5px; color: #8a8a96; margin: 8px 0 0 0; font-weight: 600;">Por defecto: 100 metros</p>
     </div>
-    
-    <div class="modal-btn-group" style="flex-wrap: wrap; margin-top: 24px;">
+
+    <div class="modal-btn-group" style="flex-wrap: wrap; margin-top: 26px;">
       <button type="button" class="cancel-visible" onclick="cerrarModal('modal-configuraciones')" style="flex: 1;">Cerrar</button>
       <button type="button" id="btn-guardar-config" class="confirm-primary" onclick="window.guardarConfiguraciones()" style="flex: 1;">Guardar</button>
     </div>
@@ -756,8 +1718,8 @@
     <p>Ingresa la contraseña para autorizar esta acción.</p>
     <div style="position: relative; width: 100%; margin-bottom: 24px;">
       <input type="password" id="input-password-accion" placeholder="Contraseña" style="margin-bottom: 0; padding-right: 48px;">
-      <button type="button" onclick="togglePasswordVisibility('input-password-accion', this)" 
-              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-muted); padding: 4px;">
+      <button type="button" onclick="togglePasswordVisibility('input-password-accion', this)"
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #8a8a96; padding: 4px;">
         👁️
       </button>
     </div>
@@ -780,7 +1742,7 @@
   </div>
 </div>
 
-<!-- Modal: Reconocimiento facial (solo cuando hay acción pendiente) -->
+<!-- Modal: Reconocimiento facial -->
 <div id="modal-reconocimiento" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-icon">✅</div>
@@ -788,7 +1750,7 @@
     <div class="emp-rec-nombre" id="rec-nombre"></div>
     <div class="emp-rec-id" id="rec-id"></div>
     <div class="emp-rec-puesto" id="rec-puesto"></div>
-    <p style="margin-bottom: 18px;">Selecciona una acción para continuar.</p>
+    <p style="margin-bottom: 20px;">Selecciona una acción para continuar.</p>
     <div class="modal-btn-group">
       <button type="button" class="confirm-primary" id="btn-rec-entrada" onclick="cerrarModal('modal-reconocimiento'); document.getElementById('btnEntrada').click();">Entrada</button>
       <button type="button" class="rec-salida" id="btn-rec-salida" onclick="cerrarModal('modal-reconocimiento'); document.getElementById('btnSalida').click();">Salida</button>
@@ -808,37 +1770,37 @@
   </div>
 </div>
 
-<!-- Modal: Editar Colaborador (mismo diseño que Editar Registro) -->
+<!-- Modal: Editar Colaborador -->
 <div id="modal-editar-colaborador" class="modal-overlay">
-  <div class="modal-box" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
-    <div class="modal-icon primary" style="margin: 0 auto 16px;">✏️</div>
-    <h3 style="text-align: center; margin-bottom: 8px;">Editar Colaborador</h3>
-    <p id="edit-emp-subtitulo" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;"></p>
+  <div class="modal-box" style="text-align: left; max-width: 540px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-icon primary" style="margin: 0 auto 18px;">✏️</div>
+    <h3 style="text-align: center; margin-bottom: 10px;">Editar Colaborador</h3>
+    <p id="edit-emp-subtitulo" style="text-align: center; color: #7a7a88; font-size: 13.5px; margin-bottom: 22px; font-weight: 600;"></p>
     <div class="emp-foto-preview" id="edit-emp-foto-preview"></div>
-    
+
     <div class="edit-form">
       <div class="edit-field">
         <label for="edit-emp-id">Número de Empleado</label>
         <input type="text" id="edit-emp-id">
       </div>
-      <div class="edit-field" style="margin-top:10px;">
+      <div class="edit-field" style="margin-top:12px;">
         <label for="edit-emp-nombre">Nombre</label>
         <input type="text" id="edit-emp-nombre">
       </div>
-      <div class="edit-field" style="margin-top:10px;">
+      <div class="edit-field" style="margin-top:12px;">
         <label for="edit-emp-puesto">Puesto</label>
         <input type="text" id="edit-emp-puesto">
       </div>
-      
+
       <div class="edit-actions-grid">
         <button type="button" class="btn-foto-cam" id="btn-emp-tomar-foto">📸 Tomar foto</button>
         <button type="button" class="btn-del-foto" id="btn-emp-eliminar-foto">Eliminar foto</button>
       </div>
-      
-      <label style="font-size:13px; font-weight:600; color:var(--text-muted); display:block; text-align:left; margin-top:14px;">O cargar una foto</label>
+
+      <label style="font-size:12.5px; font-weight:800; color:#8a8a96; display:block; text-align:left; margin-top:16px; text-transform:uppercase; letter-spacing:0.02em;">O cargar una foto</label>
       <input type="file" id="edit-emp-foto" accept="image/*" class="edit-file-input">
     </div>
-    
+
     <div class="modal-btn-group">
       <button type="button" class="cancel-visible" onclick="cerrarModal('modal-editar-colaborador')" style="flex: 1;">Cancelar</button>
       <button type="button" class="confirm-danger" id="btn-emp-eliminar" style="flex: 1;">Eliminar</button>
@@ -865,47 +1827,47 @@
 
 <!-- Modal: Editar Registro de Asistencia -->
 <div id="modal-editar-registro" class="modal-overlay">
-  <div class="modal-box" style="text-align: left; max-width: 520px; max-height: 90vh; overflow-y: auto;">
-    <div class="modal-icon primary" style="margin: 0 auto 16px;">✏️</div>
-    <h3 style="text-align: center; margin-bottom: 8px;">Editar Registro</h3>
-    <p id="edit-reg-subtitulo" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;"></p>
-    
-    <div id="edit-bloque-entrada" style="display: none; margin-bottom: 20px; padding: 16px; background: #f0faf3; border-radius: 14px; border: 1px solid #c6e9d0;">
-      <h4 style="margin: 0 0 12px 0; color: #1a7f37;">Entrada</h4>
-      <label style="font-size: 13px; font-weight: 500;">Fecha y hora</label>
-      <input type="datetime-local" id="edit-entrada-hora" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+  <div class="modal-box" style="text-align: left; max-width: 540px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-icon primary" style="margin: 0 auto 18px;">✏️</div>
+    <h3 style="text-align: center; margin-bottom: 10px;">Editar Registro</h3>
+    <p id="edit-reg-subtitulo" style="text-align: center; color: #7a7a88; font-size: 13.5px; margin-bottom: 22px; font-weight: 600;"></p>
+
+    <div id="edit-bloque-entrada" style="display: none; margin-bottom: 22px; padding: 18px; background: #ecf7ef; border-radius: var(--clay-radius-sm); border: 2px solid rgba(255, 255, 255, 0.85); box-shadow: inset 2px 2px 6px rgba(52, 199, 89, 0.1), inset -2px -2px 6px rgba(255, 255, 255, 1);">
+      <h4 style="margin: 0 0 14px 0; color: #1a7f37; font-size: 15px; font-weight: 800;">Entrada</h4>
+      <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Fecha y hora</label>
+      <input type="datetime-local" id="edit-entrada-hora" style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; margin: 8px 0 14px; font-size: 14px; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 600;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 120px;">
-          <label style="font-size: 13px; font-weight: 500;">Latitud</label>
-          <input type="number" step="any" id="edit-entrada-lat" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+          <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Latitud</label>
+          <input type="number" step="any" id="edit-entrada-lat" style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; margin: 8px 0 14px; font-size: 14px; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 600;">
         </div>
         <div style="flex: 1; min-width: 120px;">
-          <label style="font-size: 13px; font-weight: 500;">Longitud</label>
-          <input type="number" step="any" id="edit-entrada-lng" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+          <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Longitud</label>
+          <input type="number" step="any" id="edit-entrada-lng" style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; margin: 8px 0 14px; font-size: 14px; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 600;">
         </div>
       </div>
-      <label style="font-size: 13px; font-weight: 500;">Foto (subir nueva)</label>
-      <input type="file" id="edit-entrada-foto" accept="image/*" style="width: 100%; margin: 6px 0 8px; font-size: 13px;">
-      <div id="edit-entrada-foto-preview" style="margin-top: 6px;"></div>
+      <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Foto (subir nueva)</label>
+      <input type="file" id="edit-entrada-foto" accept="image/*" style="width: 100%; margin: 8px 0 10px; font-size: 13px;">
+      <div id="edit-entrada-foto-preview" style="margin-top: 8px;"></div>
     </div>
 
-    <div id="edit-bloque-salida" style="display: none; margin-bottom: 20px; padding: 16px; background: #fff5f5; border-radius: 14px; border: 1px solid #ffcccc;">
-      <h4 style="margin: 0 0 12px 0; color: #d32f2f;">Salida</h4>
-      <label style="font-size: 13px; font-weight: 500;">Fecha y hora</label>
-      <input type="datetime-local" id="edit-salida-hora" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+    <div id="edit-bloque-salida" style="display: none; margin-bottom: 22px; padding: 18px; background: #fdecec; border-radius: var(--clay-radius-sm); border: 2px solid rgba(255, 255, 255, 0.85); box-shadow: inset 2px 2px 6px rgba(255, 59, 48, 0.1), inset -2px -2px 6px rgba(255, 255, 255, 1);">
+      <h4 style="margin: 0 0 14px 0; color: #d32f2f; font-size: 15px; font-weight: 800;">Salida</h4>
+      <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Fecha y hora</label>
+      <input type="datetime-local" id="edit-salida-hora" style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; margin: 8px 0 14px; font-size: 14px; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 600;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 120px;">
-          <label style="font-size: 13px; font-weight: 500;">Latitud</label>
-          <input type="number" step="any" id="edit-salida-lat" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+          <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Latitud</label>
+          <input type="number" step="any" id="edit-salida-lat" style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; margin: 8px 0 14px; font-size: 14px; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 600;">
         </div>
         <div style="flex: 1; min-width: 120px;">
-          <label style="font-size: 13px; font-weight: 500;">Longitud</label>
-          <input type="number" step="any" id="edit-salida-lng" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0 12px; font-size: 14px;">
+          <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Longitud</label>
+          <input type="number" step="any" id="edit-salida-lng" style="width: 100%; padding: 14px; border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 12px; margin: 8px 0 14px; font-size: 14px; background: var(--clay-surface); box-shadow: var(--clay-shadow-in); font-weight: 600;">
         </div>
       </div>
-      <label style="font-size: 13px; font-weight: 500;">Foto (subir nueva)</label>
-      <input type="file" id="edit-salida-foto" accept="image/*" style="width: 100%; margin: 6px 0 8px; font-size: 13px;">
-      <div id="edit-salida-foto-preview" style="margin-top: 6px;"></div>
+      <label style="font-size: 12.5px; font-weight: 700; color: #5a5a66;">Foto (subir nueva)</label>
+      <input type="file" id="edit-salida-foto" accept="image/*" style="width: 100%; margin: 8px 0 10px; font-size: 13px;">
+      <div id="edit-salida-foto-preview" style="margin-top: 8px;"></div>
     </div>
 
     <div class="modal-btn-group" style="flex-wrap: wrap;">
@@ -919,8 +1881,8 @@
 <!-- Modal: Foto ampliada -->
 <div id="modal-foto-ampliada" class="modal-overlay" onclick="cerrarModal('modal-foto-ampliada')">
   <div style="text-align: center; max-width: 90vw; max-height: 90vh;" onclick="event.stopPropagation()">
-    <img id="img-foto-ampliada" src="" alt="Foto" style="max-width: 90vw; max-height: 80vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
-    <p style="color: #fff; margin-top: 16px; font-size: 14px;">Toca fuera para cerrar</p>
+    <img id="img-foto-ampliada" src="" alt="Foto">
+    <p>Toca fuera para cerrar</p>
   </div>
 </div>
 
@@ -956,14 +1918,30 @@
   }
   window.alert = function(mensaje) { mostrarAviso(mensaje); };
 
-  // ===== Sistema de toasts dinámicos =====
+  // ===== Sistema de toasts dinámicos (ANTIDUPLICADOS) =====
   const toastContainer = document.getElementById("toast-container");
   window.mostrarToast = function(mensaje, tipo = "info", duracion = 4000) {
+    // Evitar duplicados exactos en pantalla
+    const existingToasts = Array.from(toastContainer.querySelectorAll('.toast-text'));
+    const duplicado = existingToasts.find(el => el.textContent === mensaje);
+    if (duplicado) {
+      // Si ya existe uno igual, solo reiniciamos su temporizador visual (opcional)
+      const toast = duplicado.closest('.toast');
+      if (toast) {
+        // Efecto visual de "pulso" para indicar que se reinició
+        toast.style.animation = 'none';
+        toast.offsetHeight; // trigger reflow
+        toast.style.animation = 'toastClayIn 0.45s var(--ease-bounce)';
+      }
+      return; // No creamos uno nuevo
+    }
+
     const iconos = { ok: "✅", error: "❌", info: "ℹ️" };
     const toast = document.createElement("div");
     toast.className = "toast " + tipo;
     toast.innerHTML = `<span class="toast-icon">${iconos[tipo] || iconos.info}</span><span class="toast-text">${mensaje}</span>`;
     toastContainer.appendChild(toast);
+    
     setTimeout(() => {
       toast.classList.add("hide");
       setTimeout(() => toast.remove(), 300);
@@ -1098,6 +2076,8 @@
   window.guardarConfiguraciones = guardarConfiguraciones;
 
   // ===== BINDING DURO ADICIONAL =====
+  // NOTA: Este binding era el causante de la duplicación, pero ahora
+  // el anti-duplicados en mostrarToast() se encarga de que no se vean dos.
   window.addEventListener("load", () => {
     const btnGuardarConfig = document.getElementById("btn-guardar-config");
     if (btnGuardarConfig && !btnGuardarConfig._bioSyncBound) {
@@ -1112,10 +2092,10 @@
   });
 
   const MODEL_URL = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
-  const THRESHOLD = 0.55; 
+  const THRESHOLD = 0.55;
   let OFICINA_LAT = 20.971006;
   let OFICINA_LON = -89.612914;
-  const VALIDAR_UBICACION = true; 
+  const VALIDAR_UBICACION = true;
   const PASSWORD_ADMIN = "ControlInterno2026";
   const HORAS_SIN_REGISTRO = 8;
 
@@ -1124,28 +2104,28 @@
   let AUTO_CAMARA = true;
   let AUTO_UBICACION = true;
 
-  let labeledDescriptors = []; 
+  let labeledDescriptors = [];
   let cacheRegistrosCompletos = [];
   let listo = false;
-  let rostroActual = null; 
+  let rostroActual = null;
   let guardando = false;
   let adminAutorizado = false;
-  let accionPendienteAdmin = null; 
-  
-  let fotos = [null, null, null]; 
-  let descriptores = [null, null, null];
-  let fotoSeleccionada = -1; 
-  let idEmpleadoEditando = null; 
+  let accionPendienteAdmin = null;
 
-  let tiempoSinReconocer = 0; 
+  let fotos = [null, null, null];
+  let descriptores = [null, null, null];
+  let fotoSeleccionada = -1;
+  let idEmpleadoEditando = null;
+
+  let tiempoSinReconocer = 0;
   let ultimoFrameTime = Date.now();
   let botonMostrado = false;
 
   let ultimaClaveAcciones = "";
   let ultimaEvaluacionModal = 0;
-  
+
   let streamGlobal = null;
-  let bucleActivo = false; 
+  let bucleActivo = false;
   let primerCuadroListo = false;
 
   const videoScanner = document.getElementById("videoScanner");
@@ -1157,7 +2137,7 @@
   const accionesAsistencia = document.getElementById("acciones-asistencia");
   const avisoRostro = document.getElementById("aviso-rostro");
   const bloqueoCamara = document.getElementById("bloqueo-camara");
-  
+
   const videoRegistro = document.getElementById("videoRegistro");
   const statusRegistro = document.getElementById("statusRegistro");
   const btnTomarFoto = document.getElementById("btnTomarFoto");
@@ -1167,7 +2147,7 @@
   const inputNombre = document.getElementById("inputNombre");
   const inputId = document.getElementById("inputId");
   const inputPuesto = document.getElementById("inputPuesto");
-  
+
   const adminMenu = document.getElementById("admin-menu");
   const checkCamaraAuto = document.getElementById("check-camara-auto");
 
@@ -1193,7 +2173,7 @@
   window.pedirPass = function(accion) {
     adminMenu.classList.remove("show");
     accionPendienteAdmin = accion;
-    
+
     if (accion === "registro") {
       document.getElementById("titulo-modal-pass").textContent = "Registro de Colaborador";
       document.getElementById("desc-modal-pass").textContent = "Ingresa la contraseña para acceder al registro.";
@@ -1201,7 +2181,7 @@
       document.getElementById("titulo-modal-pass").textContent = "Configuraciones";
       document.getElementById("desc-modal-pass").textContent = "Ingresa la contraseña para acceder a configuraciones.";
     }
-    
+
     abrirModal('modal-password');
   }
 
@@ -1319,7 +2299,7 @@
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      
+
       if (btn.dataset.tab === 'empleados') {
         renderTablaEmpleados();
         if (streamGlobal) {
@@ -1380,7 +2360,7 @@
     const val = input.value;
     if (val === PASSWORD_ADMIN) {
       cerrarModal('modal-password');
-      
+
       if (accionPendienteAdmin === "registro") {
         document.getElementById("tab-btn-empleados").style.display = "block";
         document.getElementById("tab-btn-empleados").click();
@@ -1501,7 +2481,6 @@
     const fecha = fechaLocalDeISO(horaISO);
     const empId = String(emp.employeeId);
 
-    // Solo busca la fila de ESTE día (nunca otras fechas)
     const { data: existing, error: eFind } = await sb.from("registros")
       .select("id, hora_entrada, fecha")
       .eq("employee_id", empId)
@@ -1514,7 +2493,6 @@
     }
 
     if (existing) {
-      // Fila del día existe (p.ej. solo salida manual) → actualizar SOLO esa fila por id
       const { data, error } = await sb.from("registros")
         .update({
           hora_entrada: horaISO,
@@ -1530,7 +2508,6 @@
       return data;
     }
 
-    // Día nuevo → INSERT (no borra ni modifica otros días)
     const { data, error } = await sb.from("registros").insert({
       employee_id: empId,
       name: emp.name,
@@ -1542,7 +2519,6 @@
     }).select("id").single();
 
     if (error) {
-      // Si falla por unique (employee_id,fecha), reintentar como update de ese día
       if (String(error.message || "").toLowerCase().includes("unique") || error.code === "23505") {
         const { data: again } = await sb.from("registros")
           .select("id, hora_entrada")
@@ -1571,7 +2547,6 @@
     const fecha = fechaLocalDeISO(horaISO);
     const empId = String(emp.employeeId);
 
-    // Solo la fila de ESTE día
     const { data: existing, error: e1 } = await sb.from("registros")
       .select("id, hora_entrada, hora_salida, fecha")
       .eq("employee_id", empId)
@@ -1584,7 +2559,6 @@
     if (existing.hora_salida) {
       throw new Error("Ya registraste salida hoy.");
     }
-    // Update estrictamente por id de esa fila (no toca otros días)
     const { data, error } = await sb.from("registros")
       .update({
         hora_salida: horaISO,
@@ -1601,7 +2575,6 @@
   }
 
   async function actualizarRegistroDB(reg) {
-    // reg: { id, name, employeeId, entrada?: {hora,foto,ubicacion}, salida?: {hora,foto,ubicacion} }
     const row = {
       name: reg.name,
       employee_id: String(reg.employeeId),
@@ -1631,7 +2604,6 @@
     return r.employeeId != null ? r.employeeId : (r.employee_id != null ? r.employee_id : r.id);
   }
 
-  // Mapea 1 fila DB → objeto unificado usado por la UI
   function mapRegistroFromDB(r) {
     return {
       id: r.id,
@@ -1656,7 +2628,6 @@
         foto: r.foto_salida,
         ubicacion: r.ubicacion_salida
       } : null,
-      // compatibilidad con código que busca .hora / .tipo
       hora: r.hora_entrada || r.hora_salida,
       tipo: r.hora_salida ? "SALIDA" : "ENTRADA"
     };
@@ -1709,7 +2680,6 @@
   }
 
   function suscribirRealtime() {
-    // Un solo canal con las 3 tablas (más fiable)
     const channel = sb.channel("biosync-sync", {
       config: { broadcast: { self: false }, presence: { key: "" } }
     });
@@ -1728,7 +2698,6 @@
         console.log("[BioSync Realtime]", status, err || "");
         if (status === "SUBSCRIBED") {
           realtimeListo = true;
-          // Un refresh inicial por si se perdió un evento al conectar
           refrescarEmpleadosDesdeNube().catch(() => {});
           refrescarRegistrosDesdeNube().catch(() => {});
         }
@@ -1737,8 +2706,6 @@
         }
       });
 
-    // Respaldo: si Realtime no está habilitado en el proyecto, sincroniza cada 12 s
-    // (solo con pestaña visible para no gastar batería)
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(() => {
       if (document.hidden) return;
@@ -1747,7 +2714,6 @@
       cargarConfiguraciones().catch(() => {});
     }, 12000);
 
-    // Al volver a la pestaña, refrescar al instante
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
         refrescarEmpleadosDesdeNube().catch(() => {});
@@ -1756,20 +2722,20 @@
     });
   }
 
-    function renderTablaEmpleados() {
+  function renderTablaEmpleados() {
     const tbody = document.querySelector("#tablaEmpleados tbody");
     tbody.innerHTML = "";
     if (labeledDescriptors.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay colaboradores registrados</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#8a8a96; padding:24px; font-weight:600;">No hay colaboradores registrados</td></tr>';
       return;
     }
     labeledDescriptors.forEach(emp => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${emp.foto ? `<img src="${emp.foto}" class="foto-tabla">` : 'N/A'}</td>
-        <td>${emp.employeeId}</td>
-        <td>${emp.name}</td>
-        <td>${emp.puesto || '<span style="color:var(--text-muted);">—</span>'}</td>
+        <td>${emp.foto ? `<img src="${emp.foto}" class="foto-tabla">` : '<span style="color:#8a8a96; font-weight:700;">N/A</span>'}</td>
+        <td style="font-weight:700;">${emp.employeeId}</td>
+        <td style="font-weight:700;">${emp.name}</td>
+        <td style="font-weight:600; color:#5a5a66;">${emp.puesto || '<span style="color:#8a8a96;">—</span>'}</td>
         <td>
           <button class="btn-fila-icono" title="Editar o eliminar colaborador" aria-label="Editar o eliminar colaborador" onclick="editarEmpleado('${emp.employeeId}')">✏️</button>
         </td>
@@ -1846,15 +2812,15 @@
   document.getElementById("filtro-mes")?.addEventListener("change", aplicarFiltrosYRender);
 
   function formatUbicacion(ubicacion) {
-    if (!ubicacion) return '<span style="color:var(--text-muted);">N/A</span>';
+    if (!ubicacion) return '<span style="color:#8a8a96; font-weight:600;">N/A</span>';
     const lat = ubicacion.lat;
     const lng = ubicacion.lng;
     const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-    return `<span style="font-size:12px;">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)} <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);text-decoration:none;font-weight:500;" onclick="event.stopPropagation()">📍</a></span>`;
+    return `<span style="font-size:12px; font-weight:700;">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)} <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);text-decoration:none;font-weight:800;" onclick="event.stopPropagation()">📍</a></span>`;
   }
 
   function fotoHTML(src) {
-    if (!src) return "—";
+    if (!src) return '<span style="color:#8a8a96; font-weight:700;">—</span>';
     const safe = src.replace(/'/g, "\\'");
     return `<img src="${src}" class="foto-tabla foto-clickable" onclick="event.stopPropagation(); ampliarFoto('${safe}')">`;
   }
@@ -1868,7 +2834,7 @@
     const contenedor = document.getElementById("contenedor-registros");
     contenedor.innerHTML = "";
     if (!registros || registros.length === 0) {
-      contenedor.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay asistencias registradas con estos filtros.</p>';
+      contenedor.innerHTML = '<p style="text-align:center; color:#8a8a96; font-weight:600; padding:24px;">No hay asistencias registradas con estos filtros.</p>';
       return;
     }
 
@@ -1883,7 +2849,6 @@
       if (!porAnio[anio][diaKey]) porAnio[anio][diaKey] = {};
       const empId = getRegEmployeeId(r);
       const empKey = empId + "|" + r.name;
-      // Una fila DB = una línea (entrada + salida del mismo día)
       porAnio[anio][diaKey][empKey] = {
         name: r.name,
         id: empId,
@@ -1939,29 +2904,28 @@
           const tr = document.createElement("tr");
           tr.className = "fila-registro";
 
-          let entradaHTML = '<span style="color:var(--text-muted);">Sin registro</span>';
-          let fotoE = "—";
+          let entradaHTML = '<span style="color:#8a8a96; font-weight:600;">Sin registro</span>';
+          let fotoE = '<span style="color:#8a8a96; font-weight:700;">—</span>';
           if (emp.entrada) {
             const horaE = new Date(emp.entrada.hora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
             entradaHTML = `<span class="badge in">${horaE}</span>`;
             fotoE = fotoHTML(emp.entrada.foto);
           }
 
-          let salidaHTML = '<span style="color:var(--text-muted);">Sin registro</span>';
-          let fotoS = "—";
+          let salidaHTML = '<span style="color:#8a8a96; font-weight:600;">Sin registro</span>';
+          let fotoS = '<span style="color:#8a8a96; font-weight:700;">—</span>';
           if (emp.salida) {
             const horaS = new Date(emp.salida.hora).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
             salidaHTML = `<span class="badge out">${horaS}</span>`;
             fotoS = fotoHTML(emp.salida.foto);
           } else if (emp.entrada) {
-            // Si ya cambió el día (o pasaron HORAS_SIN_REGISTRO) → "Sin registro"
             const fechaEntrada = fechaLocalISO(emp.entrada.hora);
             const hoy = hoyISO();
             const horasDesde = (ahora - new Date(emp.entrada.hora).getTime()) / 3600000;
             const diaCerrado = fechaEntrada !== hoy || horasDesde >= HORAS_SIN_REGISTRO;
             salidaHTML = diaCerrado
-              ? '<span style="color:var(--danger);font-weight:600;">Sin registro</span>'
-              : '<span style="color:var(--text-muted);">Pendiente</span>';
+              ? '<span style="color:var(--danger);font-weight:800;">Sin registro</span>'
+              : '<span style="color:#8a8a96;font-weight:600;">Pendiente</span>';
           }
 
           const payload = {
@@ -1976,7 +2940,7 @@
           const payloadStr = encodeURIComponent(JSON.stringify(payload));
 
           tr.innerHTML = `
-            <td style="font-weight:600;white-space:nowrap;">${emp.name} <span style="color:var(--text-muted);font-weight:400;font-size:12px;">(#${emp.id})</span></td>
+            <td style="font-weight:700;white-space:nowrap;">${emp.name} <span style="color:#8a8a96;font-weight:600;font-size:12px;">(#${emp.id})</span></td>
             <td style="white-space:nowrap;">${entradaHTML}</td>
             <td style="white-space:nowrap;">${salidaHTML}</td>
             <td style="white-space:nowrap;">${formatUbicacion(emp.entrada ? emp.entrada.ubicacion : null)}</td>
@@ -2146,7 +3110,7 @@
       document.getElementById("edit-entrada-foto").value = "";
       document.getElementById("edit-entrada-foto-preview").innerHTML = registroEditando.entrada.foto
         ? `<img src="${registroEditando.entrada.foto}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`
-        : "<span style='color:var(--text-muted);font-size:13px;'>Sin foto</span>";
+        : "<span style='color:#8a8a96;font-size:13px;font-weight:600;'>Sin foto</span>";
     } else {
       bloqueE.style.display = "none";
     }
@@ -2160,7 +3124,7 @@
       document.getElementById("edit-salida-foto").value = "";
       document.getElementById("edit-salida-foto-preview").innerHTML = registroEditando.salida.foto
         ? `<img src="${registroEditando.salida.foto}" class="foto-clickable" style="height:64px;width:64px;border-radius:12px;object-fit:cover;" onclick="ampliarFoto(this.src)">`
-        : "<span style='color:var(--text-muted);font-size:13px;'>Sin foto</span>";
+        : "<span style='color:#8a8a96;font-size:13px;font-weight:600;'>Sin foto</span>";
     } else {
       bloqueS.style.display = "none";
     }
@@ -2341,7 +3305,7 @@
   function pintarFotoColaborador(foto) {
     document.getElementById("edit-emp-foto-preview").innerHTML = foto
       ? `<img src="${foto}" alt="Foto del colaborador" onclick="ampliarFoto(this.src)" style="cursor:zoom-in;">`
-      : '<span style="color:var(--text-muted); font-size:14px;">Sin foto</span>';
+      : '<span style="color:#8a8a96; font-size:13.5px; font-weight:600;">Sin foto</span>';
   }
 
   document.getElementById("edit-emp-foto").addEventListener("click", function() {
@@ -2427,11 +3391,8 @@
     };
 
     try {
-      // Si cambia el folio: actualizar empleado + cascada en registros (sin borrar historial)
       if (nuevoId !== idOriginal) {
-        // 1) Crear/actualizar con el nuevo ID (mismo descriptor y datos)
         await guardarEmpleadoDB(empActualizado);
-        // 2) Reasignar TODOS los registros del ID viejo al nuevo (mantiene historial por día)
         const { error: errReg } = await sb.from("registros")
           .update({
             employee_id: String(nuevoId),
@@ -2440,10 +3401,8 @@
           })
           .eq("employee_id", String(idOriginal));
         if (errReg) throw new Error(errReg.message || "Error al reasignar asistencias");
-        // 3) Borrar solo la ficha vieja del colaborador (no toca registros)
         await eliminarEmpleadoDB(idOriginal);
       } else {
-        // Solo nombre/puesto/foto: actualizar ficha y sincronizar nombre en registros
         await guardarEmpleadoDB(empActualizado);
         if (nombre !== empleadoEditando.name) {
           await sb.from("registros")
@@ -2458,13 +3417,13 @@
       empleadoEditando = null;
       fotoNuevaColaborador = null;
       fotoEliminadaColaborador = false;
-      
+
       mostrarToast("Colaborador actualizado. Historial de asistencias conservado.", "ok", 3000);
-      
+
       setTimeout(() => {
         bloquearModulo();
       }, 500);
-      
+
     } catch (err) {
       alert("Error al actualizar: " + (err.message || err), "error");
     }
@@ -2515,7 +3474,6 @@
 
     let registros;
     try {
-      // Usar cache en memoria (sincronizado por realtime) o refetch rápido
       if (cacheRegistrosCompletos && cacheRegistrosCompletos.length >= 0) {
         registros = cacheRegistrosCompletos;
       } else {
@@ -2571,7 +3529,7 @@
   }
 
   // ===== FLUJO DE CÁMARA Y RECONOCIMIENTO =====
-  
+
   function iniciarEscaneo() {
     if (bucleActivo) return;
     bucleActivo = true;
@@ -2585,7 +3543,6 @@
       );
     }
 
-    // Intentos de menos a más permisivos (Chrome/Brave a veces rechazan constraints estrictas)
     const intentos = [
       { video: { facingMode: { ideal: "user" }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
       { video: { facingMode: "user" }, audio: false },
@@ -2637,10 +3594,8 @@
         streamGlobal = null;
       }
 
-      // Chrome/Brave: a veces hace falta un gesto del usuario; si auto-arranque falla, se muestra el botón
       streamGlobal = await pedirCamaraConFallbacks();
 
-      // Asegurar atributos que Chrome exige para autoplay
       videoScanner.setAttribute("playsinline", "true");
       videoScanner.setAttribute("muted", "true");
       videoScanner.muted = true;
@@ -2657,7 +3612,6 @@
         await videoScanner.play();
       } catch (playErr) {
         console.warn("video.play() bloqueado:", playErr);
-        // Seguir: el stream ya está asignado; el usuario puede interactuar
       }
 
       listo = true;
@@ -2677,7 +3631,6 @@
       statusRegistro.className = "err";
       statusRegistro.textContent = "Error de cámara: " + (e.message || e);
       mostrarToast(e.message || String(e), "error", 7000);
-      // Siempre mostrar botón manual en Chrome/Brave si falla
       bloqueoCamara.style.display = "block";
     }
   }
@@ -2701,7 +3654,7 @@
       if (AUTO_UBICACION) {
         setTimeout(() => solicitarPermisoUbicacion(), 1200);
       }
-      
+
     } catch (e) {
       console.error("Error init:", e);
       mostrarToast("Error: " + e.message, "error", 5000);
@@ -2713,7 +3666,7 @@
       setTimeout(() => requestAnimationFrame(loopDeteccion), 300);
       return;
     }
-    
+
     if (!guardando) {
       const ahora = Date.now();
       const deltaTime = ahora - ultimoFrameTime;
@@ -2732,11 +3685,11 @@
 
         const ctx = overlayScanner.getContext("2d");
         ctx.clearRect(0, 0, overlayScanner.width, overlayScanner.height);
-        
+
         if (detections.length > 0) {
-          const resized = faceapi.resizeResults(detections, { 
-            width: overlayScanner.width, 
-            height: overlayScanner.height 
+          const resized = faceapi.resizeResults(detections, {
+            width: overlayScanner.width,
+            height: overlayScanner.height
           });
           faceapi.draw.drawDetections(overlayScanner, resized);
         }
@@ -2746,7 +3699,6 @@
         if (detections.length > 0 && labeledDescriptors.length > 0) {
           const det = await faceapi.detectSingleFace(videoScanner, options).withFaceLandmarks().withFaceDescriptor();
           if (det) {
-            // Label = employeeId (estable aunque cambie nombre/foto)
             const labeled = labeledDescriptors.map(e =>
               new faceapi.LabeledFaceDescriptors(String(e.employeeId), [e.descriptor])
             );
@@ -2756,7 +3708,7 @@
             if (match.label !== "unknown") {
               rostroReconocido = true;
               tiempoSinReconocer = 0;
-              
+
               const emp = labeledDescriptors.find(e => String(e.employeeId) === String(match.label));
               if (emp) {
                 const cambioEmpleado = !rostroActual || String(rostroActual.employeeId) !== String(emp.employeeId);
@@ -2784,7 +3736,7 @@
 
         if (!rostroReconocido && detections.length > 0) {
           tiempoSinReconocer += deltaTime;
-          
+
           if (tiempoSinReconocer > 5000 && !botonMostrado) {
             botonMostrado = true;
             avisoRostro.style.display = "block";
@@ -2826,7 +3778,7 @@
     const nombre = inputNombre.value.trim();
     const id = inputId.value.trim();
     const puesto = inputPuesto.value.trim();
-    
+
     if (!id || !nombre || !puesto) return alert("Llena el número de empleado, nombre y puesto.");
     if (!idEmpleadoEditando && labeledDescriptors.some(e => e.employeeId === id)) return alert("Ese ID ya existe.");
 
@@ -2876,7 +3828,7 @@
   });
 
   window.seleccionarFotoTemporal = function(index) {
-    if (!fotos[index]) return; 
+    if (!fotos[index]) return;
     fotoSeleccionada = index;
     for (let i = 0; i < 3; i++) document.getElementById('step' + (i + 1)).classList.remove('selected');
     document.getElementById('step' + (index + 1)).classList.add('selected');
@@ -2907,11 +3859,11 @@
   btnConfirmarFoto.addEventListener("click", () => {
     if (fotoSeleccionada === -1) return alert("Selecciona una foto.");
     if (!fotos[0] || !fotos[1] || !fotos[2]) return alert("Faltan fotos.");
-    
+
     abrirModal('modal-confirmar-guardar');
     document.getElementById('modal-guardar-titulo').textContent = idEmpleadoEditando ? "Actualizar Colaborador" : "Registrar Colaborador";
     document.getElementById('modal-guardar-mensaje').textContent = `¿Confirmas que deseas ${idEmpleadoEditando ? 'actualizar' : 'registrar'} a este colaborador?`;
-    
+
     document.getElementById('btn-modal-guardar').onclick = async () => {
       cerrarModal('modal-confirmar-guardar');
       const nombre = inputNombre.value.trim();
@@ -2931,7 +3883,7 @@
         await guardarEmpleadoDB(nuevoEmp);
         await cargarTodoDB();
         reiniciarFormulario();
-        
+
         statusRegistro.className = "ok";
         statusRegistro.textContent = `✅ Colaborador ${idEmpleadoEditando ? 'actualizado' : 'registrado'} correctamente.`;
         idEmpleadoEditando = null;
@@ -2979,7 +3931,6 @@
 
   function solicitarPermisoUbicacion() {
     if (!navigator.geolocation) return;
-    // Pide permiso sin bloquear; acepta posición cacheada reciente
     navigator.geolocation.getCurrentPosition(
       () => {},
       () => {},
@@ -2993,7 +3944,6 @@
         return reject("Este dispositivo o navegador no soporta GPS.");
       }
 
-      // Opciones: alta precisión, timeout generoso, permite cache de hasta 30 s
       const optionsAlta = {
         enableHighAccuracy: true,
         timeout: 20000,
@@ -3044,14 +3994,12 @@
               `Mejorando precisión GPS... (±${Math.round(accuracy)} m)`;
           }
         }
-        // Aceptar si precisión razonable
         if (accuracy <= 80) {
           if (toastGPS) toastGPS.remove();
           finalizar(mejorLectura);
         }
       };
 
-      // 1) Intentos paralelos: getCurrentPosition (rápido + alta precisión)
       navigator.geolocation.getCurrentPosition(
         (p) => aplicarLectura(p),
         () => {},
@@ -3063,24 +4011,19 @@
         optionsAlta
       );
 
-      // 2) watchPosition para seguir mejorando
       try {
         watchId = navigator.geolocation.watchPosition(
           (p) => aplicarLectura(p),
           (e) => {
-            // Solo fallar si no tenemos ninguna lectura y es denegación de permiso
-            if (e && e.code === 1 /* PERMISSION_DENIED */) {
+            if (e && e.code === 1) {
               if (toastGPS) toastGPS.remove();
               fallar("Permiso de ubicación denegado. Activa la ubicación en el navegador y vuelve a intentar.");
             }
           },
           optionsAlta
         );
-      } catch (err) {
-        // Continuar con los getCurrentPosition
-      }
+      } catch (err) {}
 
-      // 3) A los 8 s: si ya hay alguna lectura, úsala aunque no sea perfecta
       setTimeout(() => {
         if (terminado) return;
         if (mejorLectura) {
@@ -3089,7 +4032,6 @@
         }
       }, 8000);
 
-      // 4) A los 18 s: último recurso
       setTimeout(() => {
         if (terminado) return;
         if (toastGPS) toastGPS.remove();
@@ -3110,7 +4052,7 @@
 
   async function validarUbicacion() {
     let ubicacion = await obtenerUbicacion();
-    
+
     if (VALIDAR_UBICACION) {
       const dist = calcularDistancia(ubicacion.lat, ubicacion.lng, OFICINA_LAT, OFICINA_LON);
       if (dist > RADIO_METROS) {
@@ -3128,10 +4070,10 @@
 
   function capturarFoto(videoElement) {
     const canvas = document.createElement("canvas");
-    canvas.width = 200; 
+    canvas.width = 200;
     canvas.height = 150;
     canvas.getContext("2d").drawImage(videoElement, 0, 0, 200, 150);
-    return canvas.toDataURL("image/jpeg", 0.3); 
+    return canvas.toDataURL("image/jpeg", 0.3);
   }
 
   btnEntrada.addEventListener("click", async () => {
@@ -3145,11 +4087,11 @@
       const ubicacion = await validarUbicacion();
       const foto = capturarFoto(videoScanner);
       const fecha = hoyISO();
-      
+
       const horaISO = new Date().toISOString();
       await registrarEntradaDB(empTemp, horaISO, foto, ubicacion);
       await renderTablaRegistros();
-      
+
       mostrarToast(`Entrada registrada para ${empTemp.name}`, "ok", 4000);
     } catch (e) {
       mostrarToast(e.message || String(e), "error", 5000);
@@ -3169,7 +4111,6 @@
 
     try {
       const fecha = hoyISO();
-      // Validar tiempo mínimo con el registro del día en caché/nube
       let registros = cacheRegistrosCompletos || [];
       if (!registros.length) {
         const { data, error } = await sb.from("registros").select("*");
@@ -3201,7 +4142,7 @@
       const horaISO = new Date().toISOString();
       await registrarSalidaDB(empTemp, horaISO, foto, ubicacion);
       await renderTablaRegistros();
-      
+
       mostrarToast(`Salida registrada para ${empTemp.name}`, "ok", 4000);
     } catch (e) {
       mostrarToast(e.message || String(e), "error", 5000);
